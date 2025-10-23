@@ -31,37 +31,37 @@ float mandelbulb(vec3 p){
   float mid = u_audioMid;
   float high = u_audioHigh;
   
-  // Multi-frequency power modulation
-  float power = u_power + bass * 3.0 + mid * 2.0 + high * 1.5;
-  power += sin(u_time * 0.8 + bass * 4.0) * 0.5 * u_frequencyResponse;
+  // Multi-frequency power modulation (more controlled)
+  float power = u_power + bass * 1.5 + mid * 1.0 + high * 0.8;
+  power += sin(u_time * 0.8 + bass * 2.0) * 0.3 * u_frequencyResponse;
   
-  // Complex multi-directional distortion
+  // Controlled multi-directional distortion (preserves 3D structure)
   vec3 distortion1 = vec3(
-    sin(p.x * 1.2 + u_time * 0.4 + bass * 3.0) * u_distortion * bass,
-    cos(p.y * 1.8 + u_time * 0.6 + mid * 2.5) * u_distortion * mid,
-    sin(p.z * 2.3 + u_time * 0.8 + high * 2.0) * u_distortion * high
+    sin(p.x * 1.5 + u_time * 0.3 + bass * 1.5) * u_distortion * bass * 0.3,
+    cos(p.y * 1.2 + u_time * 0.4 + mid * 1.2) * u_distortion * mid * 0.3,
+    sin(p.z * 1.8 + u_time * 0.5 + high * 1.0) * u_distortion * high * 0.3
   );
   
-  // Secondary distortion layer for more complexity
+  // Subtle secondary distortion layer
   vec3 distortion2 = vec3(
-    cos(p.x * 3.1 + u_time * 0.3) * sin(p.y * 2.7 + u_time * 0.5) * u_chaos * bass,
-    sin(p.y * 2.4 + u_time * 0.7) * cos(p.z * 3.3 + u_time * 0.4) * u_chaos * mid,
-    cos(p.z * 2.8 + u_time * 0.6) * sin(p.x * 3.5 + u_time * 0.8) * u_chaos * high
+    cos(p.x * 2.0 + u_time * 0.2) * sin(p.y * 1.5 + u_time * 0.3) * u_chaos * bass * 0.2,
+    sin(p.y * 1.8 + u_time * 0.4) * cos(p.z * 2.2 + u_time * 0.2) * u_chaos * mid * 0.2,
+    cos(p.z * 2.1 + u_time * 0.3) * sin(p.x * 1.7 + u_time * 0.4) * u_chaos * high * 0.2
   );
   
-  // Tertiary morphing layer
+  // Gentle morphing layer (preserves core shape)
   vec3 morphing = vec3(
-    sin(p.x * p.y * 0.5 + u_time * 0.9) * cos(p.z * 0.3 + u_time * 1.1) * u_morphing * (bass + mid),
-    cos(p.y * p.z * 0.4 + u_time * 1.2) * sin(p.x * 0.2 + u_time * 0.8) * u_morphing * (mid + high),
-    sin(p.z * p.x * 0.6 + u_time * 1.0) * cos(p.y * 0.4 + u_time * 1.3) * u_morphing * (high + bass)
+    sin(p.x * p.y * 0.2 + u_time * 0.6) * cos(p.z * 0.1 + u_time * 0.7) * u_morphing * (bass + mid) * 0.15,
+    cos(p.y * p.z * 0.15 + u_time * 0.8) * sin(p.x * 0.1 + u_time * 0.5) * u_morphing * (mid + high) * 0.15,
+    sin(p.z * p.x * 0.25 + u_time * 0.7) * cos(p.y * 0.2 + u_time * 0.9) * u_morphing * (high + bass) * 0.15
   );
   
   p += (distortion1 + distortion2 + morphing) * u_shapeMod;
   
-  // Multi-axis audio-reactive rotation
-  float rotAngleX = u_time * u_rotationSpeed + bass * 3.0 + sin(u_time * 0.5) * 0.5;
-  float rotAngleY = u_time * u_rotationSpeed * 0.7 + mid * 2.5 + cos(u_time * 0.7) * 0.3;
-  float rotAngleZ = u_time * u_rotationSpeed * 1.3 + high * 2.0 + sin(u_time * 0.9) * 0.4;
+  // Controlled multi-axis audio-reactive rotation
+  float rotAngleX = u_time * u_rotationSpeed + bass * 1.5 + sin(u_time * 0.3) * 0.3;
+  float rotAngleY = u_time * u_rotationSpeed * 0.8 + mid * 1.2 + cos(u_time * 0.4) * 0.2;
+  float rotAngleZ = u_time * u_rotationSpeed * 1.1 + high * 1.0 + sin(u_time * 0.5) * 0.25;
   
   // X-axis rotation
   mat3 rotX = mat3(
@@ -87,11 +87,11 @@ float mandelbulb(vec3 p){
   // Apply all rotations
   p = rotZ * rotY * rotX * p;
   
-  // Additional chaotic transformation
-  float chaos = u_chaos * (bass + mid + high) * 0.5;
-  p.x += sin(p.y * 2.0 + u_time * 1.5) * chaos;
-  p.y += cos(p.z * 2.5 + u_time * 1.2) * chaos;
-  p.z += sin(p.x * 3.0 + u_time * 1.8) * chaos;
+  // Subtle chaotic transformation (preserves 3D structure)
+  float chaos = u_chaos * (bass + mid + high) * 0.15;
+  p.x += sin(p.y * 1.2 + u_time * 0.8) * chaos;
+  p.y += cos(p.z * 1.5 + u_time * 0.6) * chaos;
+  p.z += sin(p.x * 1.8 + u_time * 0.9) * chaos;
   
   vec3 z=p;
   float dr=1.0;
@@ -159,9 +159,20 @@ void main(){
     float hue=mod(u_hueShift + t*0.2 + bass*0.5, 1.0);
     vec3 base=hsv2rgb(vec3(hue,1.0,1.0));
     col=base*pow(diff,0.8)*u_intensity*(0.7+mid*0.6+high*0.4);
+    
+    // Add subtle contour enhancement without changing colors
+    // Use the existing color but enhance edges
+    float edgeFactor = smoothstep(0.0, 0.02, d);
+    float contourBoost = 1.0 + (1.0 - edgeFactor) * 0.3;
+    col *= contourBoost;
+    
+    // Add subtle rim lighting using existing color
+    float rim = 1.0 - abs(dot(n, normalize(vec3(uv, -1.0))));
+    rim = pow(rim, 3.0);
+    col += base * rim * 0.2;
   }
 
-  // glow
+  // Original glow
   col += vec3(0.2,0.1,0.3)*(0.1+0.9*exp(-0.2*total))*bass*1.5;
   col=pow(col,vec3(0.4545)); // gamma
   gl_FragColor=vec4(col,1.0);
