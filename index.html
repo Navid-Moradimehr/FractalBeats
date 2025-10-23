@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cosmic Neon Mandelbulb Visualizer</title>
+  <style>
+    html,body {margin:0; height:100%; background:black; overflow:hidden;}
+    #ui {position:absolute; top:10px; right:10px; z-index:10;}
+    input[type="file"]{color:white;}
+  </style>
+</head>
+<body>
+  <input id="audioFile" type="file" accept="audio/*"/>
+  <div id="ui"></div>
+  <canvas id="c"></canvas>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+    import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/lil-gui.module.min.js';
+
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({canvas});
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    const scene = new THREE.Scene();
+    const camera = new THREE.Camera();
+
+    const uniforms = {
+      u_time: {value:0},
+      u_resolution:{value:new THREE.Vector2(innerWidth, innerHeight)},
+      u_audioLow:{value:0},
+      u_audioMid:{value:0},
+      u_audioHigh:{value:0},
+      u_intensity:{value:1.0},
+      u_power:{value:8.0},
+      u_hueShift:{value:0.0}
+    };
+
+    let material, mesh;
+    async function initShader(){
+      const frag = await fetch('shader.glsl').then(r=>r.text());
+      material = new THREE.ShaderMaterial({
+        uniforms,
+        fragmentShader: frag,
+        vertexShader:`void main(){gl_Position=vec4(position,1.0);}`
+      });
+      mesh = new THREE.Mesh(new THREE.PlaneGeometry(2,2), material);
+      scene.add(mesh);
+    }
+
+    await initShader();
+
+    const gui = new GUI({container:document.getElementById('ui')});
+    gui.add(uniforms.u_intensity,'value',0.2,3.0,0.01).name('Intensity');
+    gui.add(uniforms.u_power,'value',2.0,12.0,0.1).name('Power');
+    gui.add(uniforms.u_hueShift,'value',0.0,6.283,0.01).name('HueShift');
+
+    // Audio setup
+    const fileInput = document.getElementById('audioFile');
+    const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    let srcNode=null;
+
+    fileInput.onchange = e=>{
+      if(srcNode) srcNode.disconnect();
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ev=>{
+        audioCtx.decodeAudioData(ev.target.result, buf=>{
+          const bufferSource = audioCtx.createBufferSource();
+          bufferSource.buffer = buf;
+          bufferSource.connect(analyser);
+          analyser.connect(audioCtx.destination);
+          bufferSource.start();
+          srcNode=bufferSource;
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    function updateAudio(){
+      analyser.getByteFrequencyData(data);
+      let bass=0, mid=0, high=0;
+      const l=data.length;
+      for(let i=0;i<l;i++){
+        const v=data[i]/255;
+        if(i<l/3) bass+=v;
+        else if(i<2*l/3) mid+=v;
+        else high+=v;
+      }
+      bass/=l/3; mid/=l/3; high/=l/3;
+      // smooth damping
+      uniforms.u_audioLow.value += (bass-uniforms.u_audioLow.value)*0.05;
+      uniforms.u_audioMid.value += (mid-uniforms.u_audioMid.value)*0.05;
+      uniforms.u_audioHigh.value += (high-uniforms.u_audioHigh.value)*0.05;
+    }
+
+    function resize(){
+      renderer.setSize(innerWidth, innerHeight);
+      uniforms.u_resolution.value.set(innerWidth, innerHeight);
+    }
+    addEventListener('resize',resize);
+
+    let clock=new THREE.Clock();
+    function animate(){
+      requestAnimationFrame(animate);
+      uniforms.u_time.value = clock.getElapsedTime();
+      updateAudio();
+      renderer.render(scene,camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
