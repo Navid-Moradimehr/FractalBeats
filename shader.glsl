@@ -8,6 +8,9 @@ uniform float u_audioHigh;
 uniform float u_intensity;
 uniform float u_power;
 uniform float u_hueShift;
+uniform float u_shapeMod;
+uniform float u_distortion;
+uniform float u_rotationSpeed;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -20,6 +23,36 @@ vec3 hsv2rgb(vec3 c){
 }
 
 float mandelbulb(vec3 p){
+  // Audio-reactive shape modulation
+  float bass = u_audioLow;
+  float mid = u_audioMid;
+  float high = u_audioHigh;
+  
+  // Dynamic power based on audio
+  float power = u_power + bass * 2.0 + mid * 1.0;
+  
+  // Shape distortion based on frequencies
+  vec3 distortion = vec3(
+    sin(p.x * 2.0 + u_time * 0.5) * u_distortion * bass,
+    cos(p.y * 1.5 + u_time * 0.3) * u_distortion * mid,
+    sin(p.z * 3.0 + u_time * 0.7) * u_distortion * high
+  );
+  p += distortion * u_shapeMod;
+  
+  // Audio-reactive rotation
+  float rotAngle = u_time * u_rotationSpeed + bass * 2.0;
+  mat3 rotX = mat3(
+    1.0, 0.0, 0.0,
+    0.0, cos(rotAngle), -sin(rotAngle),
+    0.0, sin(rotAngle), cos(rotAngle)
+  );
+  mat3 rotY = mat3(
+    cos(rotAngle * 0.7), 0.0, sin(rotAngle * 0.7),
+    0.0, 1.0, 0.0,
+    -sin(rotAngle * 0.7), 0.0, cos(rotAngle * 0.7)
+  );
+  p = rotY * rotX * p;
+  
   vec3 z=p;
   float dr=1.0;
   float r=0.0;
@@ -28,7 +61,6 @@ float mandelbulb(vec3 p){
     if(r>2.0) break;
     float theta=acos(z.z/r);
     float phi=atan(z.y,z.x);
-    float power=u_power;
     float zr=pow(r,power);
     dr=pow(r,power-1.0)*power*dr+1.0;
     theta*=power;
