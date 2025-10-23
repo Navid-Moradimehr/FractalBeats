@@ -14,6 +14,9 @@ uniform float u_rotationSpeed;
 uniform float u_chaos;
 uniform float u_morphing;
 uniform float u_frequencyResponse;
+uniform float u_shapeRegen;
+uniform float u_beatSync;
+uniform float u_structureChange;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -31,9 +34,32 @@ float mandelbulb(vec3 p){
   float mid = u_audioMid;
   float high = u_audioHigh;
   
-  // Multi-frequency power modulation (more controlled)
+  // Beat-synced shape regeneration
+  float beat = sin(u_time * 2.0 + bass * 8.0) * 0.5 + 0.5;
+  float regenPhase = u_time * u_beatSync + bass * 4.0;
+  
+  // Fundamental structure changes - regenerate fractal shape
+  vec3 regenOffset = vec3(
+    sin(regenPhase * 1.2) * u_shapeRegen * (0.5 + bass * 0.5),
+    cos(regenPhase * 0.8) * u_shapeRegen * (0.5 + mid * 0.5),
+    sin(regenPhase * 1.5) * u_shapeRegen * (0.5 + high * 0.5)
+  );
+  
+  // Structure morphing - change fundamental shape
+  float structurePhase = u_time * u_structureChange + (bass + mid + high) * 2.0;
+  vec3 structureMod = vec3(
+    sin(structurePhase * 0.7) * 0.3 * u_structureChange,
+    cos(structurePhase * 1.1) * 0.3 * u_structureChange,
+    sin(structurePhase * 0.9) * 0.3 * u_structureChange
+  );
+  
+  // Apply regeneration and structure changes
+  p += regenOffset + structureMod;
+  
+  // Multi-frequency power modulation with regeneration
   float power = u_power + bass * 1.5 + mid * 1.0 + high * 0.8;
   power += sin(u_time * 0.8 + bass * 2.0) * 0.3 * u_frequencyResponse;
+  power += beat * u_shapeRegen * 2.0; // Beat-synced power changes
   
   // Controlled multi-directional distortion (preserves 3D structure)
   vec3 distortion1 = vec3(

@@ -39,7 +39,10 @@
       u_rotationSpeed:{value:0.5},
       u_chaos:{value:0.4},
       u_morphing:{value:0.6},
-      u_frequencyResponse:{value:0.8}
+      u_frequencyResponse:{value:0.8},
+      u_shapeRegen:{value:0.6},
+      u_beatSync:{value:0.8},
+      u_structureChange:{value:0.5}
     };
 
     let material, mesh;
@@ -66,6 +69,9 @@
     gui.add(uniforms.u_chaos,'value',0.0,1.5,0.01).name('Chaos');
     gui.add(uniforms.u_morphing,'value',0.0,1.5,0.01).name('Morphing');
     gui.add(uniforms.u_frequencyResponse,'value',0.0,2.0,0.01).name('Freq Response');
+    gui.add(uniforms.u_shapeRegen,'value',0.0,1.5,0.01).name('Shape Regen');
+    gui.add(uniforms.u_beatSync,'value',0.0,2.0,0.01).name('Beat Sync');
+    gui.add(uniforms.u_structureChange,'value',0.0,1.5,0.01).name('Structure');
 
     // Audio setup
     const fileInput = document.getElementById('audioFile');
