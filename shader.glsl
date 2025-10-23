@@ -11,6 +11,9 @@ uniform float u_hueShift;
 uniform float u_shapeMod;
 uniform float u_distortion;
 uniform float u_rotationSpeed;
+uniform float u_chaos;
+uniform float u_morphing;
+uniform float u_frequencyResponse;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -28,30 +31,67 @@ float mandelbulb(vec3 p){
   float mid = u_audioMid;
   float high = u_audioHigh;
   
-  // Dynamic power based on audio
-  float power = u_power + bass * 2.0 + mid * 1.0;
+  // Multi-frequency power modulation
+  float power = u_power + bass * 3.0 + mid * 2.0 + high * 1.5;
+  power += sin(u_time * 0.8 + bass * 4.0) * 0.5 * u_frequencyResponse;
   
-  // Shape distortion based on frequencies
-  vec3 distortion = vec3(
-    sin(p.x * 2.0 + u_time * 0.5) * u_distortion * bass,
-    cos(p.y * 1.5 + u_time * 0.3) * u_distortion * mid,
-    sin(p.z * 3.0 + u_time * 0.7) * u_distortion * high
+  // Complex multi-directional distortion
+  vec3 distortion1 = vec3(
+    sin(p.x * 1.2 + u_time * 0.4 + bass * 3.0) * u_distortion * bass,
+    cos(p.y * 1.8 + u_time * 0.6 + mid * 2.5) * u_distortion * mid,
+    sin(p.z * 2.3 + u_time * 0.8 + high * 2.0) * u_distortion * high
   );
-  p += distortion * u_shapeMod;
   
-  // Audio-reactive rotation
-  float rotAngle = u_time * u_rotationSpeed + bass * 2.0;
+  // Secondary distortion layer for more complexity
+  vec3 distortion2 = vec3(
+    cos(p.x * 3.1 + u_time * 0.3) * sin(p.y * 2.7 + u_time * 0.5) * u_chaos * bass,
+    sin(p.y * 2.4 + u_time * 0.7) * cos(p.z * 3.3 + u_time * 0.4) * u_chaos * mid,
+    cos(p.z * 2.8 + u_time * 0.6) * sin(p.x * 3.5 + u_time * 0.8) * u_chaos * high
+  );
+  
+  // Tertiary morphing layer
+  vec3 morphing = vec3(
+    sin(p.x * p.y * 0.5 + u_time * 0.9) * cos(p.z * 0.3 + u_time * 1.1) * u_morphing * (bass + mid),
+    cos(p.y * p.z * 0.4 + u_time * 1.2) * sin(p.x * 0.2 + u_time * 0.8) * u_morphing * (mid + high),
+    sin(p.z * p.x * 0.6 + u_time * 1.0) * cos(p.y * 0.4 + u_time * 1.3) * u_morphing * (high + bass)
+  );
+  
+  p += (distortion1 + distortion2 + morphing) * u_shapeMod;
+  
+  // Multi-axis audio-reactive rotation
+  float rotAngleX = u_time * u_rotationSpeed + bass * 3.0 + sin(u_time * 0.5) * 0.5;
+  float rotAngleY = u_time * u_rotationSpeed * 0.7 + mid * 2.5 + cos(u_time * 0.7) * 0.3;
+  float rotAngleZ = u_time * u_rotationSpeed * 1.3 + high * 2.0 + sin(u_time * 0.9) * 0.4;
+  
+  // X-axis rotation
   mat3 rotX = mat3(
     1.0, 0.0, 0.0,
-    0.0, cos(rotAngle), -sin(rotAngle),
-    0.0, sin(rotAngle), cos(rotAngle)
+    0.0, cos(rotAngleX), -sin(rotAngleX),
+    0.0, sin(rotAngleX), cos(rotAngleX)
   );
+  
+  // Y-axis rotation
   mat3 rotY = mat3(
-    cos(rotAngle * 0.7), 0.0, sin(rotAngle * 0.7),
+    cos(rotAngleY), 0.0, sin(rotAngleY),
     0.0, 1.0, 0.0,
-    -sin(rotAngle * 0.7), 0.0, cos(rotAngle * 0.7)
+    -sin(rotAngleY), 0.0, cos(rotAngleY)
   );
-  p = rotY * rotX * p;
+  
+  // Z-axis rotation
+  mat3 rotZ = mat3(
+    cos(rotAngleZ), -sin(rotAngleZ), 0.0,
+    sin(rotAngleZ), cos(rotAngleZ), 0.0,
+    0.0, 0.0, 1.0
+  );
+  
+  // Apply all rotations
+  p = rotZ * rotY * rotX * p;
+  
+  // Additional chaotic transformation
+  float chaos = u_chaos * (bass + mid + high) * 0.5;
+  p.x += sin(p.y * 2.0 + u_time * 1.5) * chaos;
+  p.y += cos(p.z * 2.5 + u_time * 1.2) * chaos;
+  p.z += sin(p.x * 3.0 + u_time * 1.8) * chaos;
   
   vec3 z=p;
   float dr=1.0;
