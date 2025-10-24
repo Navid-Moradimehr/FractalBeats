@@ -48,7 +48,10 @@
       u_beatIntensity:{value:0.0},
       u_energy:{value:0.0},
       u_movementLimit:{value:0.5},
-      u_sizeControl:{value:1.0}
+      u_sizeControl:{value:1.3},
+      u_colorPalette:{value:0.0},
+      u_saturation:{value:1.0},
+      u_brightness:{value:1.0}
     };
 
     let material, mesh;
@@ -81,7 +84,10 @@
     gui.add(uniforms.u_breathing,'value',0.0,1.0,0.01).name('Breathing');
     gui.add(uniforms.u_pulse,'value',0.0,1.0,0.01).name('Pulse');
     gui.add(uniforms.u_movementLimit,'value',0.0,1.0,0.01).name('Movement Limit');
-    gui.add(uniforms.u_sizeControl,'value',0.5,2.0,0.01).name('Size Control');
+    gui.add(uniforms.u_sizeControl,'value',0.8,2.5,0.01).name('Size Control');
+    gui.add(uniforms.u_colorPalette,'value',0.0,3.0,0.1).name('Color Palette');
+    gui.add(uniforms.u_saturation,'value',0.0,2.0,0.01).name('Saturation');
+    gui.add(uniforms.u_brightness,'value',0.5,2.0,0.01).name('Brightness');
 
     // Enhanced Audio setup with beat detection
     const fileInput = document.getElementById('audioFile');
@@ -121,15 +127,25 @@
       prevData.set(data);
       analyser.getByteFrequencyData(data);
       
-      let bass=0, mid=0, high=0;
+      // Enhanced multi-resolution frequency bands
+      let subBass=0, bass=0, lowMid=0, mid=0, upperMid=0, high=0, air=0;
       const l=data.length;
       for(let i=0;i<l;i++){
         const v=data[i]/255;
-        if(i<l/3) bass+=v;
-        else if(i<2*l/3) mid+=v;
-        else high+=v;
+        if(i<l/7) subBass+=v;           // 0-1/7: Sub-bass (20-60 Hz)
+        else if(i<2*l/7) bass+=v;       // 1/7-2/7: Bass (60-120 Hz)
+        else if(i<3*l/7) lowMid+=v;     // 2/7-3/7: Low-mid (120-250 Hz)
+        else if(i<4*l/7) mid+=v;        // 3/7-4/7: Mid (250-500 Hz)
+        else if(i<5*l/7) upperMid+=v;   // 4/7-5/7: Upper-mid (500-2k Hz)
+        else if(i<6*l/7) high+=v;       // 5/7-6/7: High (2k-8k Hz)
+        else air+=v;                    // 6/7-1: Air (8k+ Hz)
       }
-      bass/=l/3; mid/=l/3; high/=l/3;
+      subBass/=l/7; bass/=l/7; lowMid/=l/7; mid/=l/7; upperMid/=l/7; high/=l/7; air/=l/7;
+      
+      // Combine for backward compatibility
+      bass = (subBass + bass) / 2;
+      mid = (lowMid + mid + upperMid) / 3;
+      high = (high + air) / 2;
       
       // Calculate total energy for beat detection
       const totalEnergy = (bass + mid + high) / 3;

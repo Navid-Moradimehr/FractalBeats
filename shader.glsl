@@ -23,6 +23,9 @@ uniform float u_beatIntensity;
 uniform float u_energy;
 uniform float u_movementLimit;
 uniform float u_sizeControl;
+uniform float u_colorPalette;
+uniform float u_saturation;
+uniform float u_brightness;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -222,20 +225,35 @@ void main(){
   if(total<MAX_DIST){
     vec3 n=getNormal(p);
     float diff=clamp(dot(n,normalize(vec3(1.0,1.0,1.0))),0.0,1.0);
-    float hue=mod(u_hueShift + t*0.2 + bass*0.5, 1.0);
-    vec3 base=hsv2rgb(vec3(hue,1.0,1.0));
-    col=base*pow(diff,0.8)*u_intensity*(0.7+mid*0.6+high*0.4);
     
-    // Add subtle contour enhancement without changing colors
-    // Use the existing color but enhance edges
+    // Enhanced color palette system
+    float hue;
+    if(u_colorPalette < 1.0) {
+      // Palette 0: Classic rainbow
+      hue = mod(u_hueShift + t*0.2 + bass*0.5, 1.0);
+    } else if(u_colorPalette < 2.0) {
+      // Palette 1: Ocean blues and teals
+      hue = mod(0.5 + u_hueShift*0.3 + t*0.1 + mid*0.3, 1.0);
+    } else if(u_colorPalette < 3.0) {
+      // Palette 2: Fire reds and oranges
+      hue = mod(0.05 + u_hueShift*0.2 + t*0.15 + high*0.4, 1.0);
+    } else {
+      // Palette 3: Cosmic purples and magentas
+      hue = mod(0.8 + u_hueShift*0.4 + t*0.25 + (bass+mid+high)*0.2, 1.0);
+    }
+    
+    vec3 base = hsv2rgb(vec3(hue, u_saturation, u_brightness));
+    col = base * pow(diff, 0.8) * u_intensity * (0.7 + mid*0.6 + high*0.4);
+    
+    // Enhanced contour enhancement
     float edgeFactor = smoothstep(0.0, 0.02, d);
     float contourBoost = 1.0 + (1.0 - edgeFactor) * 0.3;
     col *= contourBoost;
     
-    // Add subtle rim lighting using existing color
+    // Enhanced rim lighting with palette-aware colors
     float rim = 1.0 - abs(dot(n, normalize(vec3(uv, -1.0))));
     rim = pow(rim, 3.0);
-    col += base * rim * 0.2;
+    col += base * rim * 0.3 * u_brightness;
   }
 
   // Original glow
