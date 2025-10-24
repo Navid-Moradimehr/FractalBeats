@@ -28,7 +28,7 @@ uniform float u_saturation;
 uniform float u_brightness;
 
 #define MAX_STEPS 150
-#define MAX_DIST 8.0
+#define MAX_DIST 12.0
 #define MIN_DIST 0.001
 
 vec3 hsv2rgb(vec3 c){
@@ -83,6 +83,9 @@ float mandelbulb(vec3 p){
   
   // Apply size control to prevent fractal from getting too big
   p *= u_sizeControl;
+  
+  // Ensure fractal is always visible - fallback
+  if(u_sizeControl < 0.1) p *= 10.0; // If size is too small, make it visible
   
   // Reduced power modulation to control fractal size
   float power = u_power + bass * 0.8 + mid * 0.5 + high * 0.4; // Reduced audio influence
@@ -190,7 +193,7 @@ void main(){
   float high=u_audioHigh;
   float t=u_time*0.2;
   
-  // Movement-limited camera to prevent dizziness
+  // Fixed camera position - fractal should be visible
   float movementFactor = u_movementLimit; // User control for movement intensity
   float cameraOrbit = t * 0.05 * movementFactor + bass * 0.2 * movementFactor;
   float cameraRadius = 2.5 + sin(t*0.2)*0.1* movementFactor + u_energy * 0.2 * movementFactor;
@@ -201,6 +204,9 @@ void main(){
     cameraHeight,
     cos(cameraOrbit) * cameraRadius + 2.5
   );
+  
+  // Ensure camera is at reasonable distance
+  if(length(ro) < 1.0) ro = normalize(ro) * 2.0;
   
   // Audio-reactive camera direction
   vec3 rd = normalize(vec3(uv, -1.5 + bass*0.5 + u_beatIntensity*0.3));
