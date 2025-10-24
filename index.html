@@ -46,7 +46,9 @@
       u_breathing:{value:0.3},
       u_pulse:{value:0.4},
       u_beatIntensity:{value:0.0},
-      u_energy:{value:0.0}
+      u_energy:{value:0.0},
+      u_movementLimit:{value:0.5},
+      u_sizeControl:{value:1.0}
     };
 
     let material, mesh;
@@ -78,6 +80,8 @@
     gui.add(uniforms.u_structureChange,'value',0.0,1.5,0.01).name('Structure');
     gui.add(uniforms.u_breathing,'value',0.0,1.0,0.01).name('Breathing');
     gui.add(uniforms.u_pulse,'value',0.0,1.0,0.01).name('Pulse');
+    gui.add(uniforms.u_movementLimit,'value',0.0,1.0,0.01).name('Movement Limit');
+    gui.add(uniforms.u_sizeControl,'value',0.5,2.0,0.01).name('Size Control');
 
     // Enhanced Audio setup with beat detection
     const fileInput = document.getElementById('audioFile');

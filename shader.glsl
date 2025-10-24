@@ -21,6 +21,8 @@ uniform float u_breathing;
 uniform float u_pulse;
 uniform float u_beatIntensity;
 uniform float u_energy;
+uniform float u_movementLimit;
+uniform float u_sizeControl;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -56,19 +58,19 @@ float mandelbulb(vec3 p){
     sin(structurePhase * 0.9 + high * 1.8) * 0.3 * u_structureChange * high
   );
   
-  // Breathing behavior - slow organic oscillations
-  float breathingPhase = u_time * 0.3; // Slow breathing rate
-  float breathing1 = sin(breathingPhase) * u_breathing * 0.2;
-  float breathing2 = cos(breathingPhase * 0.7) * u_breathing * 0.15;
-  float breathing3 = sin(breathingPhase * 1.3) * u_breathing * 0.1;
+  // Reduced breathing behavior to prevent excessive size
+  float breathingPhase = u_time * 0.2; // Slower breathing rate
+  float breathing1 = sin(breathingPhase) * u_breathing * 0.05; // Much smaller effect
+  float breathing2 = cos(breathingPhase * 0.7) * u_breathing * 0.04;
+  float breathing3 = sin(breathingPhase * 1.3) * u_breathing * 0.03;
   
-  // Pulse behavior - faster, more rhythmic
-  float pulsePhase = u_time * 1.2;
-  float pulse1 = sin(pulsePhase) * u_pulse * 0.3;
-  float pulse2 = cos(pulsePhase * 0.8) * u_pulse * 0.25;
+  // Reduced pulse behavior
+  float pulsePhase = u_time * 0.8; // Slower pulse
+  float pulse1 = sin(pulsePhase) * u_pulse * 0.08; // Much smaller effect
+  float pulse2 = cos(pulsePhase * 0.8) * u_pulse * 0.06;
   
-  // Beat-synced pulse (triggered by actual beats)
-  float beatPulse = u_beatIntensity * 0.5;
+  // Reduced beat-synced pulse
+  float beatPulse = u_beatIntensity * 0.15; // Much smaller beat effect
   
   // Apply breathing and pulse to position
   p += vec3(breathing1, breathing2, breathing3) + vec3(pulse1, pulse2, 0.0) + vec3(beatPulse);
@@ -76,12 +78,15 @@ float mandelbulb(vec3 p){
   // Apply regeneration and structure changes
   p += regenOffset + structureMod;
   
-  // Multi-frequency power modulation with breathing and beat sync
-  float power = u_power + bass * 1.5 + mid * 1.0 + high * 0.8;
-  power += sin(u_time * 0.8 + bass * 2.0) * 0.3 * u_frequencyResponse;
-  power += (bass + mid + high) * u_shapeRegen * 1.5; // Music-synced power changes
-  power += (breathing1 + breathing2) * 0.5; // Breathing affects complexity
-  power += u_beatIntensity * 2.0; // Beat pulses increase complexity
+  // Apply size control to prevent fractal from getting too big
+  p *= u_sizeControl;
+  
+  // Reduced power modulation to control fractal size
+  float power = u_power + bass * 0.8 + mid * 0.5 + high * 0.4; // Reduced audio influence
+  power += sin(u_time * 0.8 + bass * 2.0) * 0.15 * u_frequencyResponse; // Reduced response
+  power += (bass + mid + high) * u_shapeRegen * 0.8; // Reduced regeneration effect
+  power += (breathing1 + breathing2) * 0.2; // Reduced breathing effect on complexity
+  power += u_beatIntensity * 0.8; // Reduced beat effect on complexity
   
   // Controlled multi-directional distortion (preserves 3D structure)
   vec3 distortion1 = vec3(
@@ -182,13 +187,14 @@ void main(){
   float high=u_audioHigh;
   float t=u_time*0.2;
   
-  // Dynamic camera position with audio-reactive movement
-  float cameraOrbit = t * 0.1 + bass * 0.5;
-  float cameraRadius = 2.5 + sin(t*0.5)*0.3 + u_energy * 0.5;
-  float cameraHeight = sin(t*0.3) * 0.2 + mid * 0.3;
+  // Movement-limited camera to prevent dizziness
+  float movementFactor = u_movementLimit; // User control for movement intensity
+  float cameraOrbit = t * 0.05 * movementFactor + bass * 0.2 * movementFactor;
+  float cameraRadius = 2.5 + sin(t*0.2)*0.1* movementFactor + u_energy * 0.2 * movementFactor;
+  float cameraHeight = sin(t*0.1) * 0.05 * movementFactor + mid * 0.1 * movementFactor;
   
   vec3 ro = vec3(
-    sin(cameraOrbit) * cameraRadius * 0.3,
+    sin(cameraOrbit) * cameraRadius * 0.1 * movementFactor,
     cameraHeight,
     cos(cameraOrbit) * cameraRadius + 2.5
   );
