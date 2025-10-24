@@ -11,6 +11,7 @@
 </head>
 <body>
   <input id="audioFile" type="file" accept="audio/*"/>
+  <button id="pauseButton" style="margin-left: 10px; padding: 5px 10px; background: #333; color: white; border: 1px solid #666; cursor: pointer;">Pause</button>
   <div id="ui"></div>
   <canvas id="c"></canvas>
 
@@ -25,33 +26,56 @@
     const scene = new THREE.Scene();
     const camera = new THREE.Camera();
 
+    // Default values for reset functionality
+    const defaultValues = {
+      u_intensity: 1.0,
+      u_power: 8.0,
+      u_hueShift: 0.0,
+      u_shapeMod: 0.5,
+      u_distortion: 0.3,
+      u_rotationSpeed: 0.5,
+      u_chaos: 0.4,
+      u_morphing: 0.6,
+      u_frequencyResponse: 0.8,
+      u_shapeRegen: 0.6,
+      u_beatSync: 0.8,
+      u_structureChange: 0.5,
+      u_breathing: 0.3,
+      u_pulse: 0.4,
+      u_movementLimit: 0.5,
+      u_sizeControl: 1.0,
+      u_colorPalette: 0.0,
+      u_saturation: 1.0,
+      u_brightness: 1.0
+    };
+
     const uniforms = {
       u_time: {value:0},
       u_resolution:{value:new THREE.Vector2(innerWidth, innerHeight)},
       u_audioLow:{value:0},
       u_audioMid:{value:0},
       u_audioHigh:{value:0},
-      u_intensity:{value:1.0},
-      u_power:{value:8.0},
-      u_hueShift:{value:0.0},
-      u_shapeMod:{value:0.5},
-      u_distortion:{value:0.3},
-      u_rotationSpeed:{value:0.5},
-      u_chaos:{value:0.4},
-      u_morphing:{value:0.6},
-      u_frequencyResponse:{value:0.8},
-      u_shapeRegen:{value:0.6},
-      u_beatSync:{value:0.8},
-      u_structureChange:{value:0.5},
-      u_breathing:{value:0.3},
-      u_pulse:{value:0.4},
+      u_intensity:{value:defaultValues.u_intensity},
+      u_power:{value:defaultValues.u_power},
+      u_hueShift:{value:defaultValues.u_hueShift},
+      u_shapeMod:{value:defaultValues.u_shapeMod},
+      u_distortion:{value:defaultValues.u_distortion},
+      u_rotationSpeed:{value:defaultValues.u_rotationSpeed},
+      u_chaos:{value:defaultValues.u_chaos},
+      u_morphing:{value:defaultValues.u_morphing},
+      u_frequencyResponse:{value:defaultValues.u_frequencyResponse},
+      u_shapeRegen:{value:defaultValues.u_shapeRegen},
+      u_beatSync:{value:defaultValues.u_beatSync},
+      u_structureChange:{value:defaultValues.u_structureChange},
+      u_breathing:{value:defaultValues.u_breathing},
+      u_pulse:{value:defaultValues.u_pulse},
       u_beatIntensity:{value:0.0},
       u_energy:{value:0.0},
-      u_movementLimit:{value:0.5},
-      u_sizeControl:{value:1.0},
-      u_colorPalette:{value:0.0},
-      u_saturation:{value:1.0},
-      u_brightness:{value:1.0}
+      u_movementLimit:{value:defaultValues.u_movementLimit},
+      u_sizeControl:{value:defaultValues.u_sizeControl},
+      u_colorPalette:{value:defaultValues.u_colorPalette},
+      u_saturation:{value:defaultValues.u_saturation},
+      u_brightness:{value:defaultValues.u_brightness}
     };
 
     let material, mesh;
@@ -88,6 +112,87 @@
     gui.add(uniforms.u_colorPalette,'value',0.0,3.0,0.1).name('Color Palette');
     gui.add(uniforms.u_saturation,'value',0.0,2.0,0.01).name('Saturation');
     gui.add(uniforms.u_brightness,'value',0.5,2.0,0.01).name('Brightness');
+    
+    // Add reset buttons for each control
+    const resetButtons = {};
+    Object.keys(defaultValues).forEach(key => {
+      resetButtons[key] = () => {
+        uniforms[key].value = defaultValues[key];
+        gui.controllersRecursive().forEach(controller => {
+          if(controller.property === key) {
+            controller.updateDisplay();
+          }
+        });
+      };
+    });
+    
+    // Add individual reset buttons
+    gui.add(resetButtons, 'u_intensity').name('Reset Intensity');
+    gui.add(resetButtons, 'u_power').name('Reset Power');
+    gui.add(resetButtons, 'u_hueShift').name('Reset HueShift');
+    gui.add(resetButtons, 'u_shapeMod').name('Reset Shape Mod');
+    gui.add(resetButtons, 'u_distortion').name('Reset Distortion');
+    gui.add(resetButtons, 'u_rotationSpeed').name('Reset Rot Speed');
+    gui.add(resetButtons, 'u_chaos').name('Reset Chaos');
+    gui.add(resetButtons, 'u_morphing').name('Reset Morphing');
+    gui.add(resetButtons, 'u_frequencyResponse').name('Reset Freq Response');
+    gui.add(resetButtons, 'u_shapeRegen').name('Reset Shape Regen');
+    gui.add(resetButtons, 'u_beatSync').name('Reset Beat Sync');
+    gui.add(resetButtons, 'u_structureChange').name('Reset Structure');
+    gui.add(resetButtons, 'u_breathing').name('Reset Breathing');
+    gui.add(resetButtons, 'u_pulse').name('Reset Pulse');
+    gui.add(resetButtons, 'u_movementLimit').name('Reset Movement Limit');
+    gui.add(resetButtons, 'u_sizeControl').name('Reset Size Control');
+    gui.add(resetButtons, 'u_colorPalette').name('Reset Color Palette');
+    gui.add(resetButtons, 'u_saturation').name('Reset Saturation');
+    gui.add(resetButtons, 'u_brightness').name('Reset Brightness');
+    
+    // Master reset function
+    const masterReset = () => {
+      Object.keys(defaultValues).forEach(key => {
+        uniforms[key].value = defaultValues[key];
+      });
+      gui.controllersRecursive().forEach(controller => {
+        if(defaultValues.hasOwnProperty(controller.property)) {
+          controller.updateDisplay();
+        }
+      });
+    };
+    
+    gui.add({masterReset}, 'masterReset').name('🔄 RESET ALL');
+
+    // Pause button functionality
+    const pauseButton = document.getElementById('pauseButton');
+    pauseButton.addEventListener('click', () => {
+      isPaused = !isPaused;
+      if(isPaused) {
+        pauseStartTime = Date.now();
+        pauseButton.textContent = 'Resume';
+        pauseButton.style.background = '#666';
+        if(srcNode) {
+          srcNode.stop();
+        }
+      } else {
+        pausedTime += Date.now() - pauseStartTime;
+        pauseButton.textContent = 'Pause';
+        pauseButton.style.background = '#333';
+        // Restart audio if it was playing
+        if(srcNode && fileInput.files[0]) {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            audioCtx.decodeAudioData(ev.target.result, buf => {
+              const bufferSource = audioCtx.createBufferSource();
+              bufferSource.buffer = buf;
+              bufferSource.connect(analyser);
+              analyser.connect(audioCtx.destination);
+              bufferSource.start();
+              srcNode = bufferSource;
+            });
+          };
+          reader.readAsArrayBuffer(fileInput.files[0]);
+        }
+      }
+    });
 
     // Enhanced Audio setup with beat detection
     const fileInput = document.getElementById('audioFile');
@@ -103,6 +208,11 @@
     let beatThreshold = 0.3;
     let energyHistory = [];
     const historyLength = 20;
+    
+    // Pause functionality
+    let isPaused = false;
+    let pausedTime = 0;
+    let pauseStartTime = 0;
 
     fileInput.onchange = e=>{
       if(srcNode) srcNode.disconnect();
@@ -123,6 +233,16 @@
     };
 
     function updateAudio(){
+      if(isPaused) {
+        // When paused, set all audio values to 0
+        uniforms.u_audioLow.value = 0;
+        uniforms.u_audioMid.value = 0;
+        uniforms.u_audioHigh.value = 0;
+        uniforms.u_beatIntensity.value = 0;
+        uniforms.u_energy.value = 0;
+        return;
+      }
+      
       // Store previous frame data for beat detection
       prevData.set(data);
       analyser.getByteFrequencyData(data);
@@ -202,7 +322,14 @@
     let clock=new THREE.Clock();
     function animate(){
       requestAnimationFrame(animate);
-      uniforms.u_time.value = clock.getElapsedTime();
+      
+      // Handle time when paused
+      if(isPaused) {
+        uniforms.u_time.value = pausedTime / 1000.0; // Keep time frozen
+      } else {
+        uniforms.u_time.value = (clock.getElapsedTime() * 1000.0 - pausedTime) / 1000.0;
+      }
+      
       updateAudio();
       renderer.render(scene,camera);
     }
