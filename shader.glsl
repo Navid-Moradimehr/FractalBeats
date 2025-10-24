@@ -43,6 +43,74 @@ float mandelbulb(vec3 p){
   float mid = u_audioMid;
   float high = u_audioHigh;
   
+  // CYCLIC MORPHING SYSTEM - Creates patterns that return to original state
+  
+  // 1. CYCLIC POWER MODULATION - Changes fractal complexity in cycles
+  float powerCycle = u_time * 0.3 + bass * 2.0 + mid * 1.5 + high * 1.0;
+  float cyclicPower = u_power + sin(powerCycle) * 2.0 * u_shapeRegen + 
+                     cos(powerCycle * 0.7) * 1.5 * u_structureChange;
+  
+  // 2. CYCLIC SCALE MODULATION - Changes fractal size in cycles
+  float scaleCycle = u_time * 0.4 + bass * 1.8 + mid * 1.2 + high * 0.8;
+  float cyclicScale = 1.0 + sin(scaleCycle) * 0.4 * u_shapeRegen + 
+                     cos(scaleCycle * 0.6) * 0.3 * u_structureChange;
+  
+  // 3. CYCLIC ITERATION MODULATION - Changes fractal detail level
+  float iterCycle = u_time * 0.25 + bass * 1.5 + mid * 1.0 + high * 0.7;
+  float cyclicIterations = 8.0 + sin(iterCycle) * 2.0 * u_shapeRegen + 
+                          cos(iterCycle * 0.8) * 1.5 * u_structureChange;
+  
+  // 4. CYCLIC SPATIAL MODULATION - Changes fractal position in cycles
+  float spatialCycle = u_time * 0.35 + bass * 2.2 + mid * 1.6 + high * 1.1;
+  vec3 cyclicOffset = vec3(
+    sin(spatialCycle * 1.1) * 0.3 * u_shapeRegen * bass,
+    cos(spatialCycle * 0.9) * 0.3 * u_shapeRegen * mid,
+    sin(spatialCycle * 1.3) * 0.3 * u_shapeRegen * high
+  );
+  
+  // 5. CYCLIC ROTATION MODULATION - Changes fractal orientation in cycles
+  float rotCycle = u_time * 0.2 + bass * 1.7 + mid * 1.3 + high * 0.9;
+  float cyclicRotX = sin(rotCycle) * 0.5 * u_structureChange;
+  float cyclicRotY = cos(rotCycle * 0.8) * 0.4 * u_structureChange;
+  float cyclicRotZ = sin(rotCycle * 1.2) * 0.3 * u_structureChange;
+  
+  // Apply cyclic transformations
+  p += cyclicOffset;
+  p *= cyclicScale;
+  
+  // Apply cyclic rotations
+  mat3 cyclicRotX_mat = mat3(
+    1.0, 0.0, 0.0,
+    0.0, cos(cyclicRotX), -sin(cyclicRotX),
+    0.0, sin(cyclicRotX), cos(cyclicRotX)
+  );
+  mat3 cyclicRotY_mat = mat3(
+    cos(cyclicRotY), 0.0, sin(cyclicRotY),
+    0.0, 1.0, 0.0,
+    -sin(cyclicRotY), 0.0, cos(cyclicRotY)
+  );
+  mat3 cyclicRotZ_mat = mat3(
+    cos(cyclicRotZ), -sin(cyclicRotZ), 0.0,
+    sin(cyclicRotZ), cos(cyclicRotZ), 0.0,
+    0.0, 0.0, 1.0
+  );
+  p = cyclicRotZ_mat * cyclicRotY_mat * cyclicRotX_mat * p;
+  
+  // 6. CYCLIC DISTORTION MODULATION - Changes fractal surface complexity
+  float distortionCycle = u_time * 0.45 + bass * 2.5 + mid * 1.8 + high * 1.2;
+  float cyclicDistortion = u_distortion + sin(distortionCycle) * 0.3 * u_shapeRegen + 
+                          cos(distortionCycle * 0.7) * 0.2 * u_structureChange;
+  
+  // 7. CYCLIC CHAOS MODULATION - Changes fractal randomness
+  float chaosCycle = u_time * 0.38 + bass * 2.1 + mid * 1.4 + high * 0.9;
+  float cyclicChaos = u_chaos + sin(chaosCycle) * 0.4 * u_shapeRegen + 
+                     cos(chaosCycle * 0.6) * 0.3 * u_structureChange;
+  
+  // 8. CYCLIC MORPHING MODULATION - Changes fractal organic movement
+  float morphingCycle = u_time * 0.42 + bass * 2.3 + mid * 1.7 + high * 1.1;
+  float cyclicMorphing = u_morphing + sin(morphingCycle) * 0.5 * u_shapeRegen + 
+                        cos(morphingCycle * 0.8) * 0.4 * u_structureChange;
+  
   // Music-synced shape regeneration using actual audio frequencies
   float regenPhase = u_time * u_beatSync + bass * 6.0 + mid * 4.0 + high * 2.0;
   
@@ -87,32 +155,32 @@ float mandelbulb(vec3 p){
   // Ensure fractal is always visible - fallback
   if(u_sizeControl < 0.1) p *= 10.0; // If size is too small, make it visible
   
-  // Reduced power modulation to control fractal size
-  float power = u_power + bass * 0.8 + mid * 0.5 + high * 0.4; // Reduced audio influence
-  power += sin(u_time * 0.8 + bass * 2.0) * 0.15 * u_frequencyResponse; // Reduced response
-  power += (bass + mid + high) * u_shapeRegen * 0.8; // Reduced regeneration effect
-  power += (breathing1 + breathing2) * 0.2; // Reduced breathing effect on complexity
-  power += u_beatIntensity * 0.8; // Reduced beat effect on complexity
+  // Use cyclic power modulation for dynamic shape changes
+  float power = cyclicPower + bass * 0.8 + mid * 0.5 + high * 0.4;
+  power += sin(u_time * 0.8 + bass * 2.0) * 0.15 * u_frequencyResponse;
+  power += (bass + mid + high) * u_shapeRegen * 0.8;
+  power += (breathing1 + breathing2) * 0.2;
+  power += u_beatIntensity * 0.8;
   
-  // Controlled multi-directional distortion (preserves 3D structure)
+  // Controlled multi-directional distortion (preserves 3D structure) - using cyclic values
   vec3 distortion1 = vec3(
-    sin(p.x * 1.5 + u_time * 0.3 + bass * 1.5) * u_distortion * bass * 0.3,
-    cos(p.y * 1.2 + u_time * 0.4 + mid * 1.2) * u_distortion * mid * 0.3,
-    sin(p.z * 1.8 + u_time * 0.5 + high * 1.0) * u_distortion * high * 0.3
+    sin(p.x * 1.5 + u_time * 0.3 + bass * 1.5) * cyclicDistortion * bass * 0.3,
+    cos(p.y * 1.2 + u_time * 0.4 + mid * 1.2) * cyclicDistortion * mid * 0.3,
+    sin(p.z * 1.8 + u_time * 0.5 + high * 1.0) * cyclicDistortion * high * 0.3
   );
   
-  // Subtle secondary distortion layer
+  // Subtle secondary distortion layer - using cyclic values
   vec3 distortion2 = vec3(
-    cos(p.x * 2.0 + u_time * 0.2) * sin(p.y * 1.5 + u_time * 0.3) * u_chaos * bass * 0.2,
-    sin(p.y * 1.8 + u_time * 0.4) * cos(p.z * 2.2 + u_time * 0.2) * u_chaos * mid * 0.2,
-    cos(p.z * 2.1 + u_time * 0.3) * sin(p.x * 1.7 + u_time * 0.4) * u_chaos * high * 0.2
+    cos(p.x * 2.0 + u_time * 0.2) * sin(p.y * 1.5 + u_time * 0.3) * cyclicChaos * bass * 0.2,
+    sin(p.y * 1.8 + u_time * 0.4) * cos(p.z * 2.2 + u_time * 0.2) * cyclicChaos * mid * 0.2,
+    cos(p.z * 2.1 + u_time * 0.3) * sin(p.x * 1.7 + u_time * 0.4) * cyclicChaos * high * 0.2
   );
   
-  // Gentle morphing layer (preserves core shape)
+  // Gentle morphing layer (preserves core shape) - using cyclic values
   vec3 morphing = vec3(
-    sin(p.x * p.y * 0.2 + u_time * 0.6) * cos(p.z * 0.1 + u_time * 0.7) * u_morphing * (bass + mid) * 0.15,
-    cos(p.y * p.z * 0.15 + u_time * 0.8) * sin(p.x * 0.1 + u_time * 0.5) * u_morphing * (mid + high) * 0.15,
-    sin(p.z * p.x * 0.25 + u_time * 0.7) * cos(p.y * 0.2 + u_time * 0.9) * u_morphing * (high + bass) * 0.15
+    sin(p.x * p.y * 0.2 + u_time * 0.6) * cos(p.z * 0.1 + u_time * 0.7) * cyclicMorphing * (bass + mid) * 0.15,
+    cos(p.y * p.z * 0.15 + u_time * 0.8) * sin(p.x * 0.1 + u_time * 0.5) * cyclicMorphing * (mid + high) * 0.15,
+    sin(p.z * p.x * 0.25 + u_time * 0.7) * cos(p.y * 0.2 + u_time * 0.9) * cyclicMorphing * (high + bass) * 0.15
   );
   
   p += (distortion1 + distortion2 + morphing) * u_shapeMod;
@@ -146,8 +214,8 @@ float mandelbulb(vec3 p){
   // Apply all rotations
   p = rotZ * rotY * rotX * p;
   
-  // Subtle chaotic transformation (preserves 3D structure)
-  float chaos = u_chaos * (bass + mid + high) * 0.15;
+  // Subtle chaotic transformation (preserves 3D structure) - using cyclic values
+  float chaos = cyclicChaos * (bass + mid + high) * 0.15;
   p.x += sin(p.y * 1.2 + u_time * 0.8) * chaos;
   p.y += cos(p.z * 1.5 + u_time * 0.6) * chaos;
   p.z += sin(p.x * 1.8 + u_time * 0.9) * chaos;
@@ -155,7 +223,9 @@ float mandelbulb(vec3 p){
   vec3 z=p;
   float dr=1.0;
   float r=0.0;
-  for(int i=0;i<8;i++){
+  int maxIter = int(cyclicIterations);
+  for(int i=0;i<12;i++){ // Increased max iterations for more detail
+    if(i >= maxIter) break;
     r=length(z);
     if(r>2.0) break;
     float theta=acos(z.z/r);
