@@ -50,10 +50,10 @@ float mandelbulb(vec3 p){
   float cyclicPower = u_power + sin(powerCycle) * 2.0 * u_shapeRegen + 
                      cos(powerCycle * 0.7) * 1.5 * u_structureChange;
   
-  // 2. CYCLIC SCALE MODULATION - Changes fractal size in cycles
+  // 2. CYCLIC SCALE MODULATION - Changes fractal size in cycles (reduced range)
   float scaleCycle = u_time * 0.4 + bass * 1.8 + mid * 1.2 + high * 0.8;
-  float cyclicScale = 1.0 + sin(scaleCycle) * 0.4 * u_shapeRegen + 
-                     cos(scaleCycle * 0.6) * 0.3 * u_structureChange;
+  float cyclicScale = 1.0 + sin(scaleCycle) * 0.15 * u_shapeRegen + 
+                     cos(scaleCycle * 0.6) * 0.1 * u_structureChange;
   
   // 3. CYCLIC ITERATION MODULATION - Changes fractal detail level
   float iterCycle = u_time * 0.25 + bass * 1.5 + mid * 1.0 + high * 0.7;
@@ -76,7 +76,7 @@ float mandelbulb(vec3 p){
   
   // Apply cyclic transformations
   p += cyclicOffset;
-  p *= cyclicScale;
+  // Note: cyclicScale is now applied later with size control for better range management
   
   // Apply cyclic rotations
   mat3 cyclicRotX_mat = mat3(
@@ -149,11 +149,14 @@ float mandelbulb(vec3 p){
   // Apply regeneration and structure changes
   p += regenOffset + structureMod;
   
-  // Apply size control to prevent fractal from getting too big
-  p *= u_sizeControl;
+  // Apply size control with better range management
+  // Combine cyclic scale with user size control more intelligently
+  float finalScale = u_sizeControl * (0.8 + 0.4 * cyclicScale); // Better range control
+  p *= finalScale;
   
-  // Ensure fractal is always visible - fallback
-  if(u_sizeControl < 0.1) p *= 10.0; // If size is too small, make it visible
+  // Ensure fractal is always visible - improved fallback
+  if(finalScale < 0.2) p *= 5.0; // If combined scale is too small, make it visible
+  if(finalScale > 3.0) p *= 0.5; // If combined scale is too large, reduce it
   
   // Use cyclic power modulation for dynamic shape changes
   float power = cyclicPower + bass * 0.8 + mid * 0.5 + high * 0.4;
