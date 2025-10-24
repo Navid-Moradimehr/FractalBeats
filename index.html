@@ -113,53 +113,125 @@
     gui.add(uniforms.u_saturation,'value',0.0,2.0,0.01).name('Saturation');
     gui.add(uniforms.u_brightness,'value',0.5,2.0,0.01).name('Brightness');
     
-    // Add reset buttons for each control
-    const resetButtons = {};
-    Object.keys(defaultValues).forEach(key => {
-      resetButtons[key] = () => {
-        uniforms[key].value = defaultValues[key];
-        gui.controllersRecursive().forEach(controller => {
-          if(controller.property === key) {
-            controller.updateDisplay();
-          }
+    // Store controller references for manual updates
+    const controllers = {};
+    
+    // Create reset functions that work properly
+    const resetFunctions = {
+      resetIntensity: () => { 
+        uniforms.u_intensity.value = defaultValues.u_intensity; 
+        controllers.u_intensity.updateDisplay();
+      },
+      resetPower: () => { 
+        uniforms.u_power.value = defaultValues.u_power; 
+        controllers.u_power.updateDisplay();
+      },
+      resetHueShift: () => { 
+        uniforms.u_hueShift.value = defaultValues.u_hueShift; 
+        controllers.u_hueShift.updateDisplay();
+      },
+      resetShapeMod: () => { 
+        uniforms.u_shapeMod.value = defaultValues.u_shapeMod; 
+        controllers.u_shapeMod.updateDisplay();
+      },
+      resetDistortion: () => { 
+        uniforms.u_distortion.value = defaultValues.u_distortion; 
+        controllers.u_distortion.updateDisplay();
+      },
+      resetRotSpeed: () => { 
+        uniforms.u_rotationSpeed.value = defaultValues.u_rotationSpeed; 
+        controllers.u_rotationSpeed.updateDisplay();
+      },
+      resetChaos: () => { 
+        uniforms.u_chaos.value = defaultValues.u_chaos; 
+        controllers.u_chaos.updateDisplay();
+      },
+      resetMorphing: () => { 
+        uniforms.u_morphing.value = defaultValues.u_morphing; 
+        controllers.u_morphing.updateDisplay();
+      },
+      resetFreqResponse: () => { 
+        uniforms.u_frequencyResponse.value = defaultValues.u_frequencyResponse; 
+        controllers.u_frequencyResponse.updateDisplay();
+      },
+      resetShapeRegen: () => { 
+        uniforms.u_shapeRegen.value = defaultValues.u_shapeRegen; 
+        controllers.u_shapeRegen.updateDisplay();
+      },
+      resetBeatSync: () => { 
+        uniforms.u_beatSync.value = defaultValues.u_beatSync; 
+        controllers.u_beatSync.updateDisplay();
+      },
+      resetStructure: () => { 
+        uniforms.u_structureChange.value = defaultValues.u_structureChange; 
+        controllers.u_structureChange.updateDisplay();
+      },
+      resetBreathing: () => { 
+        uniforms.u_breathing.value = defaultValues.u_breathing; 
+        controllers.u_breathing.updateDisplay();
+      },
+      resetPulse: () => { 
+        uniforms.u_pulse.value = defaultValues.u_pulse; 
+        controllers.u_pulse.updateDisplay();
+      },
+      resetMovementLimit: () => { 
+        uniforms.u_movementLimit.value = defaultValues.u_movementLimit; 
+        controllers.u_movementLimit.updateDisplay();
+      },
+      resetSizeControl: () => { 
+        uniforms.u_sizeControl.value = defaultValues.u_sizeControl; 
+        controllers.u_sizeControl.updateDisplay();
+      },
+      resetColorPalette: () => { 
+        uniforms.u_colorPalette.value = defaultValues.u_colorPalette; 
+        controllers.u_colorPalette.updateDisplay();
+      },
+      resetSaturation: () => { 
+        uniforms.u_saturation.value = defaultValues.u_saturation; 
+        controllers.u_saturation.updateDisplay();
+      },
+      resetBrightness: () => { 
+        uniforms.u_brightness.value = defaultValues.u_brightness; 
+        controllers.u_brightness.updateDisplay();
+      },
+      masterReset: () => {
+        Object.keys(defaultValues).forEach(key => {
+          uniforms[key].value = defaultValues[key];
+          if(controllers[key]) controllers[key].updateDisplay();
         });
-      };
-    });
-    
-    // Add individual reset buttons
-    gui.add(resetButtons, 'u_intensity').name('Reset Intensity');
-    gui.add(resetButtons, 'u_power').name('Reset Power');
-    gui.add(resetButtons, 'u_hueShift').name('Reset HueShift');
-    gui.add(resetButtons, 'u_shapeMod').name('Reset Shape Mod');
-    gui.add(resetButtons, 'u_distortion').name('Reset Distortion');
-    gui.add(resetButtons, 'u_rotationSpeed').name('Reset Rot Speed');
-    gui.add(resetButtons, 'u_chaos').name('Reset Chaos');
-    gui.add(resetButtons, 'u_morphing').name('Reset Morphing');
-    gui.add(resetButtons, 'u_frequencyResponse').name('Reset Freq Response');
-    gui.add(resetButtons, 'u_shapeRegen').name('Reset Shape Regen');
-    gui.add(resetButtons, 'u_beatSync').name('Reset Beat Sync');
-    gui.add(resetButtons, 'u_structureChange').name('Reset Structure');
-    gui.add(resetButtons, 'u_breathing').name('Reset Breathing');
-    gui.add(resetButtons, 'u_pulse').name('Reset Pulse');
-    gui.add(resetButtons, 'u_movementLimit').name('Reset Movement Limit');
-    gui.add(resetButtons, 'u_sizeControl').name('Reset Size Control');
-    gui.add(resetButtons, 'u_colorPalette').name('Reset Color Palette');
-    gui.add(resetButtons, 'u_saturation').name('Reset Saturation');
-    gui.add(resetButtons, 'u_brightness').name('Reset Brightness');
-    
-    // Master reset function
-    const masterReset = () => {
-      Object.keys(defaultValues).forEach(key => {
-        uniforms[key].value = defaultValues[key];
-      });
-      gui.controllersRecursive().forEach(controller => {
-        if(defaultValues.hasOwnProperty(controller.property)) {
-          controller.updateDisplay();
-        }
-      });
+      }
     };
     
-    gui.add({masterReset}, 'masterReset').name('🔄 RESET ALL');
+    // Add reset buttons next to each control
+    gui.add(resetFunctions, 'resetIntensity').name('↻ Reset');
+    gui.add(resetFunctions, 'resetPower').name('↻ Reset');
+    gui.add(resetFunctions, 'resetHueShift').name('↻ Reset');
+    gui.add(resetFunctions, 'resetShapeMod').name('↻ Reset');
+    gui.add(resetFunctions, 'resetDistortion').name('↻ Reset');
+    gui.add(resetFunctions, 'resetRotSpeed').name('↻ Reset');
+    gui.add(resetFunctions, 'resetChaos').name('↻ Reset');
+    gui.add(resetFunctions, 'resetMorphing').name('↻ Reset');
+    gui.add(resetFunctions, 'resetFreqResponse').name('↻ Reset');
+    gui.add(resetFunctions, 'resetShapeRegen').name('↻ Reset');
+    gui.add(resetFunctions, 'resetBeatSync').name('↻ Reset');
+    gui.add(resetFunctions, 'resetStructure').name('↻ Reset');
+    gui.add(resetFunctions, 'resetBreathing').name('↻ Reset');
+    gui.add(resetFunctions, 'resetPulse').name('↻ Reset');
+    gui.add(resetFunctions, 'resetMovementLimit').name('↻ Reset');
+    gui.add(resetFunctions, 'resetSizeControl').name('↻ Reset');
+    gui.add(resetFunctions, 'resetColorPalette').name('↻ Reset');
+    gui.add(resetFunctions, 'resetSaturation').name('↻ Reset');
+    gui.add(resetFunctions, 'resetBrightness').name('↻ Reset');
+    
+    // Master reset button
+    gui.add(resetFunctions, 'masterReset').name('🔄 RESET ALL');
+    
+    // Store controller references
+    gui.controllersRecursive().forEach(controller => {
+      if(controller.property && controller.property.startsWith('u_')) {
+        controllers[controller.property] = controller;
+      }
+    });
 
     // Pause button functionality
     const pauseButton = document.getElementById('pauseButton');
