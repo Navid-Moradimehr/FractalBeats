@@ -17,6 +17,10 @@ uniform float u_frequencyResponse;
 uniform float u_shapeRegen;
 uniform float u_beatSync;
 uniform float u_structureChange;
+uniform float u_breathing;
+uniform float u_pulse;
+uniform float u_beatIntensity;
+uniform float u_energy;
 
 #define MAX_STEPS 150
 #define MAX_DIST 8.0
@@ -34,32 +38,50 @@ float mandelbulb(vec3 p){
   float mid = u_audioMid;
   float high = u_audioHigh;
   
-  // Beat-synced shape regeneration
-  float beat = sin(u_time * 2.0 + bass * 8.0) * 0.5 + 0.5;
-  float regenPhase = u_time * u_beatSync + bass * 4.0;
+  // Music-synced shape regeneration using actual audio frequencies
+  float regenPhase = u_time * u_beatSync + bass * 6.0 + mid * 4.0 + high * 2.0;
   
-  // Fundamental structure changes - regenerate fractal shape
+  // Fundamental structure changes - regenerate fractal shape (music-synced)
   vec3 regenOffset = vec3(
-    sin(regenPhase * 1.2) * u_shapeRegen * (0.5 + bass * 0.5),
-    cos(regenPhase * 0.8) * u_shapeRegen * (0.5 + mid * 0.5),
-    sin(regenPhase * 1.5) * u_shapeRegen * (0.5 + high * 0.5)
+    sin(regenPhase * 1.2 + bass * 3.0) * u_shapeRegen * bass,
+    cos(regenPhase * 0.8 + mid * 2.5) * u_shapeRegen * mid,
+    sin(regenPhase * 1.5 + high * 2.0) * u_shapeRegen * high
   );
   
-  // Structure morphing - change fundamental shape
-  float structurePhase = u_time * u_structureChange + (bass + mid + high) * 2.0;
+  // Structure morphing - change fundamental shape (music-synced)
+  float structurePhase = u_time * u_structureChange + bass * 4.0 + mid * 3.0 + high * 2.0;
   vec3 structureMod = vec3(
-    sin(structurePhase * 0.7) * 0.3 * u_structureChange,
-    cos(structurePhase * 1.1) * 0.3 * u_structureChange,
-    sin(structurePhase * 0.9) * 0.3 * u_structureChange
+    sin(structurePhase * 0.7 + bass * 2.0) * 0.3 * u_structureChange * bass,
+    cos(structurePhase * 1.1 + mid * 1.5) * 0.3 * u_structureChange * mid,
+    sin(structurePhase * 0.9 + high * 1.8) * 0.3 * u_structureChange * high
   );
+  
+  // Breathing behavior - slow organic oscillations
+  float breathingPhase = u_time * 0.3; // Slow breathing rate
+  float breathing1 = sin(breathingPhase) * u_breathing * 0.2;
+  float breathing2 = cos(breathingPhase * 0.7) * u_breathing * 0.15;
+  float breathing3 = sin(breathingPhase * 1.3) * u_breathing * 0.1;
+  
+  // Pulse behavior - faster, more rhythmic
+  float pulsePhase = u_time * 1.2;
+  float pulse1 = sin(pulsePhase) * u_pulse * 0.3;
+  float pulse2 = cos(pulsePhase * 0.8) * u_pulse * 0.25;
+  
+  // Beat-synced pulse (triggered by actual beats)
+  float beatPulse = u_beatIntensity * 0.5;
+  
+  // Apply breathing and pulse to position
+  p += vec3(breathing1, breathing2, breathing3) + vec3(pulse1, pulse2, 0.0) + vec3(beatPulse);
   
   // Apply regeneration and structure changes
   p += regenOffset + structureMod;
   
-  // Multi-frequency power modulation with regeneration
+  // Multi-frequency power modulation with breathing and beat sync
   float power = u_power + bass * 1.5 + mid * 1.0 + high * 0.8;
   power += sin(u_time * 0.8 + bass * 2.0) * 0.3 * u_frequencyResponse;
-  power += beat * u_shapeRegen * 2.0; // Beat-synced power changes
+  power += (bass + mid + high) * u_shapeRegen * 1.5; // Music-synced power changes
+  power += (breathing1 + breathing2) * 0.5; // Breathing affects complexity
+  power += u_beatIntensity * 2.0; // Beat pulses increase complexity
   
   // Controlled multi-directional distortion (preserves 3D structure)
   vec3 distortion1 = vec3(
@@ -154,13 +176,25 @@ void main(){
   vec2 uv=(gl_FragCoord.xy/u_resolution.xy)*2.0-1.0;
   uv.x*=u_resolution.x/u_resolution.y;
 
-  // camera motion
+  // Enhanced camera motion with audio-reactive choreography
   float bass=u_audioLow;
   float mid=u_audioMid;
   float high=u_audioHigh;
   float t=u_time*0.2;
-  vec3 ro=vec3(0.0,0.0,2.5+sin(t*0.5)*0.3);
-  vec3 rd=normalize(vec3(uv, -1.5 + bass*0.5));
+  
+  // Dynamic camera position with audio-reactive movement
+  float cameraOrbit = t * 0.1 + bass * 0.5;
+  float cameraRadius = 2.5 + sin(t*0.5)*0.3 + u_energy * 0.5;
+  float cameraHeight = sin(t*0.3) * 0.2 + mid * 0.3;
+  
+  vec3 ro = vec3(
+    sin(cameraOrbit) * cameraRadius * 0.3,
+    cameraHeight,
+    cos(cameraOrbit) * cameraRadius + 2.5
+  );
+  
+  // Audio-reactive camera direction
+  vec3 rd = normalize(vec3(uv, -1.5 + bass*0.5 + u_beatIntensity*0.3));
 
   // rotate camera slowly
   float a=t*0.3 + bass*0.5;
