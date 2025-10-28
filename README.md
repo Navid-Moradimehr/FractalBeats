@@ -2,6 +2,8 @@
 
 A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
 
+**[Live Demo](https://yourusername.github.io/music-visualization)** - Try it now in your browser!
+
 ## Features
 
 - **Real-time Audio Analysis**: 7-band frequency analysis with beat detection
@@ -13,10 +15,13 @@ A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built w
 
 ## How to Use
 
-1. **Load Music**: Click "Choose File" and select an audio file
-2. **Adjust Settings**: Use the control panel to modify visual parameters
-3. **Reset**: Click "Reset All" to restore default settings
-4. **Pause**: Use the pause button to stop/start music and visuals
+1. **Open the App**: Visit the live demo link above
+2. **Load Music**: Click "Choose File" and select an audio file from your device
+3. **Adjust Settings**: Use the control panel to modify visual parameters
+4. **Reset**: Click "Reset All" to restore default settings
+5. **Pause**: Use the pause button to stop/start music and visuals
+
+**Note**: The app runs entirely in your browser - no installation required!
 
 ## Controls
 
@@ -57,13 +62,34 @@ A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built w
 
 Requires WebGL support and Web Audio API.
 
-## Installation
+## Local Development
 
-No installation required. Simply open `index.html` in a web browser or serve via HTTP server:
+To run locally for development:
 
-```bash
-python -m http.server 8000
-```
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/music-visualization.git
+   cd music-visualization
+   ```
+
+2. **Serve locally** (optional):
+   ```bash
+   python -m http.server 8000
+   ```
+   Then open `http://localhost:8000` in your browser
+
+3. **Or simply open** `index.html` directly in your browser
+
+## Hosting
+
+This app is designed to work perfectly with GitHub Pages:
+
+- **Free hosting** with HTTPS enabled
+- **Global CDN** for fast loading worldwide
+- **Automatic updates** when you push changes
+- **No server required** - runs entirely in the browser
+- **WebGL rendering** handled by user's GPU
+- **Web Audio API** processes audio in the browser
 
 ## License
 
