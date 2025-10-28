@@ -35,9 +35,9 @@
     const isHighPerformance = performanceScore >= 8 && pixelRatio >= 2;
     const isMediumPerformance = performanceScore >= 4 && pixelRatio >= 1;
     
-    // Adaptive quality settings
-    const adaptiveMaxSteps = isHighPerformance ? 400 : isMediumPerformance ? 300 : 250;
-    const adaptiveMaxIterations = isHighPerformance ? 20 : isMediumPerformance ? 18 : 15;
+    // Adaptive quality settings - Enhanced for better quality
+    const adaptiveMaxSteps = isHighPerformance ? 500 : isMediumPerformance ? 400 : 350;
+    const adaptiveMaxIterations = isHighPerformance ? 25 : isMediumPerformance ? 22 : 20;
     
     const canvas = document.getElementById('c');
     const renderer = new THREE.WebGLRenderer({canvas});
@@ -75,6 +75,14 @@
       u_audioLow:{value:0},
       u_audioMid:{value:0},
       u_audioHigh:{value:0},
+      // 7-Band Audio Analysis
+      u_audioSubBass:{value:0},
+      u_audioBass:{value:0},
+      u_audioLowMid:{value:0},
+      u_audioMidRange:{value:0},
+      u_audioUpperMid:{value:0},
+      u_audioHighFreq:{value:0},
+      u_audioAir:{value:0},
       u_intensity:{value:defaultValues.u_intensity},
       u_power:{value:defaultValues.u_power},
       u_hueShift:{value:defaultValues.u_hueShift},
@@ -155,7 +163,9 @@
     // Store controller references
     gui.controllersRecursive().forEach(controller => {
       if(controller.property && controller.property.startsWith('u_')) {
-        controllers[controller.property] = controller;
+        // Store with the key name without 'u_' prefix to match defaultValues keys
+        const key = controller.property.substring(2); // Remove 'u_' prefix
+        controllers[key] = controller;
       }
     });
 
@@ -236,6 +246,13 @@
         uniforms.u_audioLow.value = 0;
         uniforms.u_audioMid.value = 0;
         uniforms.u_audioHigh.value = 0;
+        uniforms.u_audioSubBass.value = 0;
+        uniforms.u_audioBass.value = 0;
+        uniforms.u_audioLowMid.value = 0;
+        uniforms.u_audioMidRange.value = 0;
+        uniforms.u_audioUpperMid.value = 0;
+        uniforms.u_audioHighFreq.value = 0;
+        uniforms.u_audioAir.value = 0;
         uniforms.u_beatIntensity.value = 0;
         uniforms.u_energy.value = 0;
         return;
@@ -270,23 +287,54 @@
       energyHistory.push(totalEnergy);
       if(energyHistory.length > historyLength) energyHistory.shift();
       
-      // Beat detection using spectral flux
-      let spectralFlux = 0;
-      for(let i=0; i<l; i++){
+      // MULTI-LEVEL BEAT DETECTION - Separate bass/mid/high beat detection
+      // Bass beat detection (kick drums)
+      let bassSpectralFlux = 0;
+      const bassEnd = Math.floor(l * 0.1);
+      for(let i=0; i<bassEnd; i++){
         const diff = (data[i]/255) - (prevData[i]/255);
-        if(diff > 0) spectralFlux += diff;
+        if(diff > 0) bassSpectralFlux += diff;
       }
-      spectralFlux /= l;
+      bassSpectralFlux /= bassEnd;
+      
+      // Mid beat detection (snares, claps)
+      let midSpectralFlux = 0;
+      const midStart = Math.floor(l * 0.1);
+      const midEnd = Math.floor(l * 0.5);
+      for(let i=midStart; i<midEnd; i++){
+        const diff = (data[i]/255) - (prevData[i]/255);
+        if(diff > 0) midSpectralFlux += diff;
+      }
+      midSpectralFlux /= (midEnd - midStart);
+      
+      // High beat detection (hi-hats, cymbals)
+      let highSpectralFlux = 0;
+      const highStart = Math.floor(l * 0.5);
+      for(let i=highStart; i<l; i++){
+        const diff = (data[i]/255) - (prevData[i]/255);
+        if(diff > 0) highSpectralFlux += diff;
+      }
+      highSpectralFlux /= (l - highStart);
+      
+      // Overall spectral flux for general beat detection
+      let spectralFlux = (bassSpectralFlux + midSpectralFlux + highSpectralFlux) / 3.0;
       
       // Calculate average energy for threshold
       const avgEnergy = energyHistory.reduce((a,b) => a+b, 0) / energyHistory.length;
       const beatThreshold = avgEnergy * 1.3; // Dynamic threshold
       
-      // Detect beat
+      // Detect beats with multi-level response
       let beatDetected = false;
-      if(spectralFlux > beatThreshold && (Date.now() - lastBeatTime) > 200){
+      const now = Date.now();
+      
+      // Strong beat if any frequency band has strong flux
+      const strongBeat = bassSpectralFlux > beatThreshold * 0.8 || 
+                         midSpectralFlux > beatThreshold * 0.9 || 
+                         highSpectralFlux > beatThreshold;
+      
+      if(strongBeat && (now - lastBeatTime) > 200){
         beatDetected = true;
-        lastBeatTime = Date.now();
+        lastBeatTime = now;
       }
       
       // Attack/Release envelopes for more natural response
@@ -305,6 +353,23 @@
       uniforms.u_audioLow.value += bassDiff * bassRate;
       uniforms.u_audioMid.value += midDiff * midRate;
       uniforms.u_audioHigh.value += highDiff * highRate;
+      
+      // Update 7-band audio uniforms with attack/release envelopes
+      const subBassDiff = subBass - uniforms.u_audioSubBass.value;
+      const bassDiff2 = bass - uniforms.u_audioBass.value;
+      const lowMidDiff = lowMid - uniforms.u_audioLowMid.value;
+      const midRangeDiff = mid - uniforms.u_audioMidRange.value;
+      const upperMidDiff = upperMid - uniforms.u_audioUpperMid.value;
+      const highFreqDiff = high - uniforms.u_audioHighFreq.value;
+      const airDiff = air - uniforms.u_audioAir.value;
+      
+      uniforms.u_audioSubBass.value += subBassDiff * (subBassDiff > 0 ? attackRate : releaseRate);
+      uniforms.u_audioBass.value += bassDiff2 * (bassDiff2 > 0 ? attackRate : releaseRate);
+      uniforms.u_audioLowMid.value += lowMidDiff * (lowMidDiff > 0 ? attackRate : releaseRate);
+      uniforms.u_audioMidRange.value += midRangeDiff * (midRangeDiff > 0 ? attackRate : releaseRate);
+      uniforms.u_audioUpperMid.value += upperMidDiff * (upperMidDiff > 0 ? attackRate : releaseRate);
+      uniforms.u_audioHighFreq.value += highFreqDiff * (highFreqDiff > 0 ? attackRate : releaseRate);
+      uniforms.u_audioAir.value += airDiff * (airDiff > 0 ? attackRate : releaseRate);
       
       // Update new uniforms
       uniforms.u_beatIntensity.value = beatDetected ? 1.0 : Math.max(0, uniforms.u_beatIntensity.value - 0.1);
