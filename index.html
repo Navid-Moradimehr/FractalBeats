@@ -151,10 +151,21 @@
     
     // Master reset function that resets everything
     const masterReset = () => {
+      console.log('=== RESET DEBUG ===');
+      console.log('defaultValues keys:', Object.keys(defaultValues));
+      console.log('controllers keys:', Object.keys(controllers));
+      
       Object.keys(defaultValues).forEach(key => {
+        console.log(`Resetting ${key}: ${defaultValues[key]}`);
         uniforms[key].value = defaultValues[key];
-        if(controllers[key]) controllers[key].updateDisplay();
+        if(controllers[key]) {
+          console.log(`Found controller for ${key}, calling updateDisplay()`);
+          controllers[key].updateDisplay();
+        } else {
+          console.log(`No controller found for ${key}`);
+        }
       });
+      console.log('=== END RESET DEBUG ===');
     };
     
     // Add single master reset button
@@ -162,11 +173,14 @@
     
     // Store controller references
     gui.controllersRecursive().forEach(controller => {
+      console.log('Controller found:', controller.property, controller);
       if(controller.property && controller.property.startsWith('u_')) {
         // Store with the full key name to match defaultValues keys
         controllers[controller.property] = controller;
+        console.log(`Stored controller for: ${controller.property}`);
       }
     });
+    console.log('Final controllers object:', controllers);
 
     // Pause button functionality
     const pauseButton = document.getElementById('pauseButton');
