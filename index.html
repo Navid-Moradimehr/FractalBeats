@@ -71,7 +71,7 @@
     
     const uniforms = {
       u_time: {value:0},
-      u_resolution:{value:new THREE.Vector2(renderWidth, renderHeight)},
+      u_resolution:{value:new THREE.Vector2(innerWidth*pixelRatio, innerHeight*pixelRatio)},
       u_audioLow:{value:0},
       u_audioMid:{value:0},
       u_audioHigh:{value:0},
@@ -313,7 +313,7 @@
 
     function resize(){
       renderer.setSize(innerWidth, innerHeight);
-      uniforms.u_resolution.value.set(innerWidth*pixelRatio*superSamplingFactor, innerHeight*pixelRatio*superSamplingFactor);
+      uniforms.u_resolution.value.set(innerWidth*pixelRatio, innerHeight*pixelRatio);
     }
     addEventListener('resize',resize);
 
