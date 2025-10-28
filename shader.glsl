@@ -227,7 +227,7 @@ float mandelbulb(vec3 p){
   float dr=1.0;
   float r=0.0;
   int maxIter = int(cyclicIterations);
-  for(int i=0;i<12;i++){ // Increased max iterations for more detail
+  for(int i=0;i<18;i++){ // Increased max iterations for more detail
     if(i >= maxIter) break;
     r=length(z);
     if(r>2.0) break;
