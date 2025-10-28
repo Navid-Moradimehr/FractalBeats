@@ -25,6 +25,10 @@
     const superSamplingFactor = 1.5; // Additional quality boost
     const renderWidth = innerWidth * pixelRatio * superSamplingFactor;
     const renderHeight = innerHeight * pixelRatio * superSamplingFactor;
+    
+    // Smart positioning system - screen-aware parameters
+    const screenWidth = innerWidth;
+    const screenHeight = innerHeight;
 
     // Performance detection for adaptive quality
     const performanceScore = navigator.hardwareConcurrency || 4;
@@ -94,7 +98,9 @@
       u_brightness:{value:defaultValues.u_brightness},
       u_adaptiveMaxSteps:{value:adaptiveMaxSteps},
       u_adaptiveMaxIterations:{value:adaptiveMaxIterations},
-      u_superSamplingFactor:{value:superSamplingFactor}
+      u_superSamplingFactor:{value:superSamplingFactor},
+      u_screenWidth:{value:screenWidth},
+      u_screenHeight:{value:screenHeight}
     };
 
     let material, mesh;
@@ -307,7 +313,7 @@
 
     function resize(){
       renderer.setSize(innerWidth, innerHeight);
-      uniforms.u_resolution.value.set(innerWidth, innerHeight);
+      uniforms.u_resolution.value.set(innerWidth*pixelRatio*superSamplingFactor, innerHeight*pixelRatio*superSamplingFactor);
     }
     addEventListener('resize',resize);
 
