@@ -1,8 +1,8 @@
-# Music Visualization App
+# FractalBeats
 
 A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
 
-**[Live Demo](https://yourusername.github.io/music-visualization)** - Try it now in your browser!
+**[Live Demo](https://navid-moradimehr.github.io/FractalBeats)** - Try it now in your browser!
 
 ## Features
 
@@ -68,8 +68,8 @@ To run locally for development:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/music-visualization.git
-   cd music-visualization
+   git clone https://github.com/Navid-Moradimehr/FractalBeats.git
+   cd FractalBeats
    ```
 
 2. **Serve locally** (optional):
