@@ -176,11 +176,15 @@
     
     // Store controller references
     gui.controllersRecursive().forEach(controller => {
-      console.log('Controller found:', controller.property, controller);
-      if(controller.property && controller.property.startsWith('u_')) {
-        // Store with the full key name to match defaultValues keys
-        controllers[controller.property] = controller;
-        console.log(`Stored controller for: ${controller.property}`);
+      console.log('Controller found:', controller.property, controller.object, controller);
+      // Check if this controller is for a uniform (object has 'value' property)
+      if(controller.object && controller.object.hasOwnProperty('value')) {
+        // Find the uniform name by looking at the object reference
+        const uniformName = Object.keys(uniforms).find(key => uniforms[key] === controller.object);
+        if(uniformName) {
+          controllers[uniformName] = controller;
+          console.log(`Stored controller for: ${uniformName}`);
+        }
       }
     });
     console.log('Final controllers object:', controllers);
