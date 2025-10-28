@@ -163,9 +163,8 @@
     // Store controller references
     gui.controllersRecursive().forEach(controller => {
       if(controller.property && controller.property.startsWith('u_')) {
-        // Store with the key name without 'u_' prefix to match defaultValues keys
-        const key = controller.property.substring(2); // Remove 'u_' prefix
-        controllers[key] = controller;
+        // Store with the full key name to match defaultValues keys
+        controllers[controller.property] = controller;
       }
     });
 
