@@ -113,7 +113,7 @@
 
     let material, mesh;
     async function initShader(){
-      const frag = await fetch('shader.glsl').then(r=>r.text());
+      const frag = await fetch('shader.glsl?' + Date.now()).then(r=>r.text());
       material = new THREE.ShaderMaterial({
         uniforms,
         fragmentShader: frag,
