@@ -26,8 +26,11 @@ uniform float u_sizeControl;
 uniform float u_colorPalette;
 uniform float u_saturation;
 uniform float u_brightness;
+uniform float u_adaptiveMaxSteps;
+uniform float u_adaptiveMaxIterations;
+uniform float u_superSamplingFactor;
 
-#define MAX_STEPS 250
+#define MAX_STEPS 400
 #define MAX_DIST 12.0
 #define MIN_DIST 0.001
 
@@ -226,9 +229,10 @@ float mandelbulb(vec3 p){
   vec3 z=p;
   float dr=1.0;
   float r=0.0;
-  int maxIter = int(cyclicIterations);
-  for(int i=0;i<18;i++){ // Increased max iterations for more detail
-    if(i >= maxIter) break;
+  int maxIter = int(min(cyclicIterations, u_adaptiveMaxIterations));
+  int adaptiveMaxIter = int(u_adaptiveMaxIterations);
+  for(int i=0;i<25;i++){ // Increased max iterations for more detail
+    if(i >= maxIter || i >= adaptiveMaxIter) break;
     r=length(z);
     if(r>2.0) break;
     float theta=acos(z.z/r);
@@ -248,12 +252,24 @@ float map(vec3 p){
 }
 
 vec3 getNormal(vec3 p){
-  float eps=0.0005;
-  vec2 e=vec2(1.0,-1.0)*0.5773*eps;
-  return normalize(e.xyy*map(p+e.xyy)+
-                   e.yyx*map(p+e.yyx)+
-                   e.yxy*map(p+e.yxy)+
-                   e.xxx*map(p+e.xxx));
+  // Enhanced normal calculation with adaptive precision
+  float eps = 0.0002 * (1.0 / u_superSamplingFactor); // Better precision with super-sampling
+  vec2 e = vec2(1.0,-1.0)*0.5773*eps;
+  vec3 n = normalize(e.xyy*map(p+e.xyy)+
+                    e.yyx*map(p+e.yyx)+
+                    e.yxy*map(p+e.yxy)+
+                    e.xxx*map(p+e.xxx));
+  
+  // Additional refinement for better contours
+  float eps2 = eps * 0.5;
+  vec3 n2 = normalize(vec3(
+    map(p + vec3(eps2, 0.0, 0.0)) - map(p - vec3(eps2, 0.0, 0.0)),
+    map(p + vec3(0.0, eps2, 0.0)) - map(p - vec3(0.0, eps2, 0.0)),
+    map(p + vec3(0.0, 0.0, eps2)) - map(p - vec3(0.0, 0.0, eps2))
+  ));
+  
+  // Blend both normal calculations for better quality
+  return normalize(mix(n, n2, 0.3));
 }
 
 void main(){
@@ -294,7 +310,9 @@ void main(){
   vec3 col=vec3(0.0);
   float d=0.0;
   vec3 p;
-  for(int i=0;i<MAX_STEPS;i++){
+  int adaptiveSteps = int(u_adaptiveMaxSteps);
+  for(int i=0;i<400;i++){ // Max possible steps
+    if(i >= adaptiveSteps) break;
     p=ro+rd*total;
     d=map(p);
     if(d<MIN_DIST || total>MAX_DIST) break;

@@ -19,11 +19,21 @@
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
     import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/lil-gui.module.min.js';
 
-    // High DPI support - detect device pixel ratio for crisp rendering
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x for performance
-    const renderWidth = innerWidth * pixelRatio;
-    const renderHeight = innerHeight * pixelRatio;
+    // High DPI support with super-sampling for maximum quality
+    const pixelRatio = window.devicePixelRatio || 1; // No cap - use full device resolution
+    const superSamplingFactor = 1.5; // Additional quality boost
+    const renderWidth = innerWidth * pixelRatio * superSamplingFactor;
+    const renderHeight = innerHeight * pixelRatio * superSamplingFactor;
 
+    // Performance detection for adaptive quality
+    const performanceScore = navigator.hardwareConcurrency || 4;
+    const isHighPerformance = performanceScore >= 8 && pixelRatio >= 2;
+    const isMediumPerformance = performanceScore >= 4 && pixelRatio >= 1;
+    
+    // Adaptive quality settings
+    const adaptiveMaxSteps = isHighPerformance ? 400 : isMediumPerformance ? 300 : 250;
+    const adaptiveMaxIterations = isHighPerformance ? 20 : isMediumPerformance ? 18 : 15;
+    
     const canvas = document.getElementById('c');
     const renderer = new THREE.WebGLRenderer({canvas});
     renderer.setSize(innerWidth, innerHeight);
@@ -80,7 +90,10 @@
       u_sizeControl:{value:defaultValues.u_sizeControl},
       u_colorPalette:{value:defaultValues.u_colorPalette},
       u_saturation:{value:defaultValues.u_saturation},
-      u_brightness:{value:defaultValues.u_brightness}
+      u_brightness:{value:defaultValues.u_brightness},
+      u_adaptiveMaxSteps:{value:adaptiveMaxSteps},
+      u_adaptiveMaxIterations:{value:adaptiveMaxIterations},
+      u_superSamplingFactor:{value:superSamplingFactor}
     };
 
     let material, mesh;
