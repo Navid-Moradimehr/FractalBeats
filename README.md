@@ -1,67 +1,70 @@
-# Cosmic Neon Mandelbulb Visualizer (P1 — Hypnotic Pulse)
+# Music Visualization App
 
-A browser-based, GPU-accelerated fractal music visualizer using **Three.js** + **WebGL ray-marching**.
+A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
 
----
+## Features
 
-## 💽 How to Run
-1. Put `index.html` and `shader.glsl` in the same folder.  
-2. Start a local server:  
-   ```bash
-   python3 -m http.server 8000
-   ```
+- **Real-time Audio Analysis**: 7-band frequency analysis with beat detection
+- **3D Mandelbulb Fractal**: Ray-marched fractal with dynamic shape morphing
+- **Audio-Reactive Effects**: Shape changes, color shifts, and camera movements synced to music
+- **Interactive Controls**: Adjustable parameters for intensity, power, colors, and more
+- **Beat Detection**: Multi-level beat detection with visual impact effects
+- **Responsive Design**: Adapts to different screen sizes and devices
 
-3. Visit **[http://localhost:8000](http://localhost:8000)** in Chrome/Edge/Firefox.
-4. Upload an `.mp3` / `.wav`.
-5. Watch the fractal pulse to the beat.
+## How to Use
 
----
+1. **Load Music**: Click "Choose File" and select an audio file
+2. **Adjust Settings**: Use the control panel to modify visual parameters
+3. **Reset**: Click "Reset All" to restore default settings
+4. **Pause**: Use the pause button to stop/start music and visuals
 
-## 🎛 Controls
+## Controls
 
-| Slider        | Function                                               |
-| ------------- | ------------------------------------------------------ |
-| **Intensity** | Multiplies final color brightness.                     |
-| **Power**     | Changes Mandelbulb iteration power (shape complexity). |
-| **HueShift**  | Shifts global hue (color rotation).                    |
+- **Intensity**: Overall brightness and contrast
+- **Power**: Fractal complexity and detail level
+- **Hue Shift**: Color palette rotation
+- **Shape Mod**: Audio-reactive shape deformation
+- **Distortion**: Surface complexity and detail
+- **Rotation Speed**: Camera and fractal rotation rate
+- **Chaos**: Randomness in fractal generation
+- **Morphing**: Organic shape transformations
+- **Frequency Response**: Sensitivity to audio frequencies
+- **Shape Regen**: Rate of shape regeneration
+- **Beat Sync**: Beat detection sensitivity
+- **Structure**: Fundamental fractal structure changes
+- **Breathing**: Slow organic pulsing
+- **Pulse**: Fast rhythmic pulsing
+- **Movement Limit**: Constrains camera movement
+- **Size Control**: Fractal scale adjustment
+- **Color Palette**: Choose from 4 different color schemes
+- **Saturation**: Color intensity
+- **Brightness**: Overall brightness level
 
----
+## Technical Details
 
-## 🎧 Audio Mapping
+- **WebGL Ray-marching**: Real-time 3D fractal rendering
+- **Web Audio API**: High-resolution frequency analysis
+- **Beat Detection**: Spectral flux analysis with attack/release envelopes
+- **Adaptive Quality**: Performance-based quality adjustment
+- **High DPI Support**: Crisp rendering on high-resolution displays
 
-| Audio Band | Used for    | Visual Effect                                    |
-| ---------- | ----------- | ------------------------------------------------ |
-| **Bass**   | u_audioLow  | Camera pulse + FOV modulation + tunnel breathing |
-| **Mid**    | u_audioMid  | Color saturation + brightness                    |
-| **High**   | u_audioHigh | Surface shimmer / highlights                     |
+## Browser Compatibility
 
----
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
 
-## ⚙️ Performance Tuning
+Requires WebGL support and Web Audio API.
 
-If frame-rate drops:
+## Installation
 
-* Reduce **MAX_STEPS** in `shader.glsl` from 150 → 100.
-* Lower window size or browser zoom.
-* Reduce `u_power` or `u_intensity`.
+No installation required. Simply open `index.html` in a web browser or serve via HTTP server:
 
-Your RTX 4070 should easily maintain 60 FPS.
-
----
-
-## 🌌 Project Structure
-
+```bash
+python -m http.server 8000
 ```
-/project
- ├─ index.html     # Three.js + audio analyzer + uniforms
- ├─ shader.glsl    # Fragment shader (Mandelbulb)
- └─ README.md
-```
 
----
+## License
 
-## 🔮 Next Phases
-
-* **P2** → Add bloom + god-rays + chromatic aberration
-* **P3** → Beat-synced camera cuts + fog + particles
-* **P4** → AI-driven color themes + RAG music embedding
+MIT License - feel free to use and modify for your projects.
