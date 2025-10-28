@@ -19,10 +19,15 @@
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
     import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/lil-gui.module.min.js';
 
+    // High DPI support - detect device pixel ratio for crisp rendering
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x for performance
+    const renderWidth = innerWidth * pixelRatio;
+    const renderHeight = innerHeight * pixelRatio;
+
     const canvas = document.getElementById('c');
     const renderer = new THREE.WebGLRenderer({canvas});
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setPixelRatio(pixelRatio);
     const scene = new THREE.Scene();
     const camera = new THREE.Camera();
 
@@ -48,10 +53,10 @@
       u_saturation: 1.0,
       u_brightness: 1.0
     };
-
+    
     const uniforms = {
       u_time: {value:0},
-      u_resolution:{value:new THREE.Vector2(innerWidth, innerHeight)},
+      u_resolution:{value:new THREE.Vector2(renderWidth, renderHeight)},
       u_audioLow:{value:0},
       u_audioMid:{value:0},
       u_audioHigh:{value:0},
