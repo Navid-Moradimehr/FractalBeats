@@ -27,7 +27,7 @@ uniform float u_colorPalette;
 uniform float u_saturation;
 uniform float u_brightness;
 
-#define MAX_STEPS 150
+#define MAX_STEPS 250
 #define MAX_DIST 12.0
 #define MIN_DIST 0.001
 
