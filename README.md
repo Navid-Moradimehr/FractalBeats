@@ -1,13 +1,13 @@
 # FractalBeats
 
-A real-time 3D Mandelbulb fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
+A real-time 3D Mandelbrot fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
 
 **[Live Demo](https://navid-moradimehr.github.io/FractalBeats)** - Try it now in your browser!
 
-## Features
+ Features:
 
 - **Real-time Audio Analysis**: 7-band frequency analysis with beat detection
-- **3D Mandelbulb Fractal**: Ray-marched fractal with dynamic shape morphing
+- **3D Mandelbrot Fractal**: Ray-marched fractal with dynamic shape morphing
 - **Audio-Reactive Effects**: Shape changes, color shifts, and camera movements synced to music
 - **Interactive Controls**: Adjustable parameters for intensity, power, colors, and more
 - **Beat Detection**: Multi-level beat detection with visual impact effects
