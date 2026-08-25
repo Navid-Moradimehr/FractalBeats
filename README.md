@@ -1,96 +1,82 @@
-# FractalBeats
+# 🌌 FractalBeats
 
-A real-time 3D Mandelbrot fractal visualizer that reacts to music input. Built with Three.js and WebGL shaders for smooth audio-reactive animations.
+**Real-time audio-reactive fractal visualizer with 5 switchable screens.** Load any music file (or use your microphone) and pick a fractal universe to fly through. Runs 100% in your browser — no install, no server.
 
-**[Live Demo](https://navid-moradimehr.github.io/FractalBeats)** - Try it now in your browser!
+**[Live Demo](https://navid-moradimehr.github.io/FractalBeats)**
 
- Features:
+## 🖥️ The Screens
 
-- **Real-time Audio Analysis**: 7-band frequency analysis with beat detection
-- **3D Mandelbrot Fractal**: Ray-marched fractal with dynamic shape morphing
-- **Audio-Reactive Effects**: Shape changes, color shifts, and camera movements synced to music
-- **Interactive Controls**: Adjustable parameters for intensity, power, colors, and more
-- **Beat Detection**: Multi-level beat detection with visual impact effects
-- **Responsive Design**: Adapts to different screen sizes and devices
+Press `1`–`5` (or the ⊞ button) to switch anytime — the music keeps playing:
 
-## How to Use
+| # | Screen | What it does |
+|---|--------|--------------|
+| 1 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with 19 tweakable audio-reactive parameters — the classic experience. |
+| 2 | 🌀 **Julia Explorer** | Auto-tours through 7 famous Mandelbrot coordinates (Seahorse Valley, Elephant Valley…), or morphs a Julia set whose `c` orbits with the mids. Wheel-zoom and drag to explore manually. |
+| 3 | 🕳️ **Fractal Tunnel** | Infinite fly-through of kali-set blossoms. Your tempo × energy sets the flight speed; beats fire light rings down the corridor. |
+| 4 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
+| 5 | 🔮 **Kaleidoscope** | Mirror-symmetric kali mandala that reshapes with every beat. |
 
-1. **Open the App**: Visit the live demo link above
-2. **Load Music**: Click "Choose File" and select an audio file from your device
-3. **Adjust Settings**: Use the control panel to modify visual parameters
-4. **Reset**: Click "Reset All" to restore default settings
-5. **Pause**: Use the pause button to stop/start music and visuals
+## 🎧 Audio Sources
 
-**Note**: The app runs entirely in your browser - no installation required!
+- **File**: click 🎵 Load, or just **drag & drop** an audio file anywhere on the page (mp3/wav/ogg/m4a/flac)
+- **Microphone**: pick *Source: Mic* — visualize Spotify, concerts, your voice, anything
+- Full transport: play/pause, **seek bar**, track name, time display
 
-## Controls
+## ⌨️ Shortcuts
 
-- **Intensity**: Overall brightness and contrast
-- **Power**: Fractal complexity and detail level
-- **Hue Shift**: Color palette rotation
-- **Shape Mod**: Audio-reactive shape deformation
-- **Distortion**: Surface complexity and detail
-- **Rotation Speed**: Camera and fractal rotation rate
-- **Chaos**: Randomness in fractal generation
-- **Morphing**: Organic shape transformations
-- **Frequency Response**: Sensitivity to audio frequencies
-- **Shape Regen**: Rate of shape regeneration
-- **Beat Sync**: Beat detection sensitivity
-- **Structure**: Fundamental fractal structure changes
-- **Breathing**: Slow organic pulsing
-- **Pulse**: Fast rhythmic pulsing
-- **Movement Limit**: Constrains camera movement
-- **Size Control**: Fractal scale adjustment
-- **Color Palette**: Choose from 4 different color schemes
-- **Saturation**: Color intensity
-- **Brightness**: Overall brightness level
+| Key | Action |
+|-----|--------|
+| `Space` | Play / pause |
+| `1`–`5` | Switch screen |
+| `S` | Open/close the screen picker |
+| `F` | Fullscreen |
 
-## Technical Details
+## ✨ Features
 
-- **WebGL Ray-marching**: Real-time 3D fractal rendering
-- **Web Audio API**: High-resolution frequency analysis
-- **Beat Detection**: Spectral flux analysis with attack/release envelopes
-- **Adaptive Quality**: Performance-based quality adjustment
-- **High DPI Support**: Crisp rendering on high-resolution displays
+- 7-band FFT analysis (sub-bass → air) with attack/release envelopes
+- Multi-level spectral-flux **beat detection** with dynamic threshold
+- **Runtime adaptive quality**: measures real FPS and scales render resolution to hold 60fps (no more one-time hardware guesses)
+- Per-screen control panels (lil-gui) with reset
+- High-DPI aware rendering
+- Self-contained: Three.js + lil-gui vendored locally — works offline, no CDN dependency
+- Zero build step — plain ES modules, served statically
 
-## Browser Compatibility
+## 🚀 Run Locally
 
-- Chrome (recommended)
-- Firefox
-- Safari
-- Edge
+```bash
+git clone https://github.com/Navid-Moradimehr/FractalBeats.git
+cd FractalBeats
+python -m http.server 8000
+# open http://localhost:8000
+```
 
-Requires WebGL support and Web Audio API.
+(Any static file server works. Opening `index.html` via `file://` will not work due to ES module + fetch restrictions.)
 
-## Local Development
+## 🧱 Architecture
 
-To run locally for development:
+```
+index.html                  app shell: header, transport, screen-picker overlay
+src/
+  main.js                   bootstrap, ScreenManager, render loop, adaptive quality
+  audio-engine.js           file/mic sources, FFT bands, beat detection
+  ui.js                     cards, transport, drag&drop, shortcuts, toasts
+  style.css
+  screens/
+    shader-screen.js        shared fullscreen-quad shader helper
+    mandelbulb.js/.glsl
+    julia.js/.glsl
+    tunnel.js/.glsl
+    kaleidoscope.js/.glsl (kaleido.glsl)
+    spectrum.js             2D canvas screen
+vendor/                     vendored three.module.js + lil-gui (no CDN needed)
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Navid-Moradimehr/FractalBeats.git
-   cd FractalBeats
-   ```
+Every screen implements `{ create(ctx), update(dt, audio), render(), resize(), dispose() }` and is lazily initialized — only the active screen's shader is compiled. Adding a new screen = drop a module in `src/screens/`, register it in `main.js`, and a card appears automatically.
 
-2. **Serve locally** (optional):
-   ```bash
-   python -m http.server 8000
-   ```
-   Then open `http://localhost:8000` in your browser
+## 🌐 Hosting
 
-3. **Or simply open** `index.html` directly in your browser
-
-## Hosting
-
-This app is designed to work perfectly with GitHub Pages:
-
-- **Free hosting** with HTTPS enabled
-- **Global CDN** for fast loading worldwide
-- **Automatic updates** when you push changes
-- **No server required** - runs entirely in the browser
-- **WebGL rendering** handled by user's GPU
-- **Web Audio API** processes audio in the browser
+Static hosting only (GitHub Pages works as-is). Microphone access requires HTTPS or `localhost`.
 
 ## License
 
-MIT License - feel free to use and modify for your projects.
+MIT

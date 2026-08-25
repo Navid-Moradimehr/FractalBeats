@@ -2,421 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cosmic Neon Mandelbulb Visualizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FractalBeats — Audio-Reactive Fractal Visualizer</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <style>
-    html,body {margin:0; height:100%; background:black; overflow:hidden;}
-    #ui {position:absolute; top:10px; right:10px; z-index:10;}
-    input[type="file"]{color:white;}
-  </style>
+  <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-  <input id="audioFile" type="file" accept="audio/*"/>
-  <button id="pauseButton" style="margin-left: 10px; padding: 5px 10px; background: #333; color: white; border: 1px solid #666; cursor: pointer;">Pause</button>
-  <div id="ui"></div>
   <canvas id="c"></canvas>
+  <div id="stage"></div>
 
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
-    import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/lil-gui.module.min.js';
+  <header>
+    <div class="brand"><span class="logo">🌌</span><span class="title">FractalBeats</span></div>
+    <button id="screens-btn" class="btn icon" title="Choose visualization (S)">⊞</button>
+    <button id="play-btn" class="btn primary" title="Play / Pause (Space)">▶ Play</button>
+    <div class="transport">
+      <span class="time-label" id="time-cur">0:00</span>
+      <input type="range" id="seekbar" min="0" max="1000" value="0" step="1" />
+      <span class="time-label" id="time-total">0:00</span>
+      <span class="track-name" id="track-name">No track loaded</span>
+    </div>
+    <div class="spacer"></div>
+    <select id="source-select" class="btn" title="Audio source">
+      <option value="none">Source: None</option>
+      <option value="file">Source: File</option>
+      <option value="mic">Source: Mic</option>
+    </select>
+    <input type="file" id="audio-file" accept="audio/*" hidden />
+    <button id="load-btn" class="btn" title="Load audio file">🎵 Load</button>
+    <button id="fs-btn" class="btn icon hide-sm" title="Fullscreen (F)">⛶</button>
+  </header>
 
-    // High DPI support with super-sampling for maximum quality
-    const pixelRatio = window.devicePixelRatio || 1; // No cap - use full device resolution
-    const superSamplingFactor = 1.5; // Additional quality boost
-    const renderWidth = innerWidth * pixelRatio * superSamplingFactor;
-    const renderHeight = innerHeight * pixelRatio * superSamplingFactor;
-    
-    // Smart positioning system - screen-aware parameters
-    const screenWidth = innerWidth;
-    const screenHeight = innerHeight;
+  <div id="gui-host"></div>
 
-    // Performance detection for adaptive quality
-    const performanceScore = navigator.hardwareConcurrency || 4;
-    const isHighPerformance = performanceScore >= 8 && pixelRatio >= 2;
-    const isMediumPerformance = performanceScore >= 4 && pixelRatio >= 1;
-    
-    // Adaptive quality settings - Enhanced for better quality
-    const adaptiveMaxSteps = isHighPerformance ? 500 : isMediumPerformance ? 400 : 350;
-    const adaptiveMaxIterations = isHighPerformance ? 25 : isMediumPerformance ? 22 : 20;
-    
-    const canvas = document.getElementById('c');
-    const renderer = new THREE.WebGLRenderer({canvas});
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(pixelRatio);
-    const scene = new THREE.Scene();
-    const camera = new THREE.Camera();
+  <section id="picker-overlay">
+    <h1 class="picker-title">FractalBeats</h1>
+    <p class="picker-sub">Pick a visual screen — switch anytime with keys 1–5 or the ⊞ button</p>
+    <div class="card-grid" id="card-grid"></div>
+  </section>
 
-    // Default values for reset functionality
-    const defaultValues = {
-      u_intensity: 1.0,
-      u_power: 8.0,
-      u_hueShift: 0.0,
-      u_shapeMod: 0.5,
-      u_distortion: 0.3,
-      u_rotationSpeed: 0.5,
-      u_chaos: 0.4,
-      u_morphing: 0.6,
-      u_frequencyResponse: 0.8,
-      u_shapeRegen: 0.6,
-      u_beatSync: 0.8,
-      u_structureChange: 0.5,
-      u_breathing: 0.3,
-      u_pulse: 0.4,
-      u_movementLimit: 0.5,
-      u_sizeControl: 0.8,
-      u_colorPalette: 0.0,
-      u_saturation: 1.0,
-      u_brightness: 1.0
-    };
-    
-    const uniforms = {
-      u_time: {value:0},
-      u_resolution:{value:new THREE.Vector2(innerWidth*pixelRatio, innerHeight*pixelRatio)},
-      u_audioLow:{value:0},
-      u_audioMid:{value:0},
-      u_audioHigh:{value:0},
-      // 7-Band Audio Analysis
-      u_audioSubBass:{value:0},
-      u_audioBass:{value:0},
-      u_audioLowMid:{value:0},
-      u_audioMidRange:{value:0},
-      u_audioUpperMid:{value:0},
-      u_audioHighFreq:{value:0},
-      u_audioAir:{value:0},
-      u_intensity:{value:defaultValues.u_intensity},
-      u_power:{value:defaultValues.u_power},
-      u_hueShift:{value:defaultValues.u_hueShift},
-      u_shapeMod:{value:defaultValues.u_shapeMod},
-      u_distortion:{value:defaultValues.u_distortion},
-      u_rotationSpeed:{value:defaultValues.u_rotationSpeed},
-      u_chaos:{value:defaultValues.u_chaos},
-      u_morphing:{value:defaultValues.u_morphing},
-      u_frequencyResponse:{value:defaultValues.u_frequencyResponse},
-      u_shapeRegen:{value:defaultValues.u_shapeRegen},
-      u_beatSync:{value:defaultValues.u_beatSync},
-      u_structureChange:{value:defaultValues.u_structureChange},
-      u_breathing:{value:defaultValues.u_breathing},
-      u_pulse:{value:defaultValues.u_pulse},
-      u_beatIntensity:{value:0.0},
-      u_energy:{value:0.0},
-      u_movementLimit:{value:defaultValues.u_movementLimit},
-      u_sizeControl:{value:defaultValues.u_sizeControl},
-      u_colorPalette:{value:defaultValues.u_colorPalette},
-      u_saturation:{value:defaultValues.u_saturation},
-      u_brightness:{value:defaultValues.u_brightness},
-      u_adaptiveMaxSteps:{value:adaptiveMaxSteps},
-      u_adaptiveMaxIterations:{value:adaptiveMaxIterations},
-      u_superSamplingFactor:{value:superSamplingFactor},
-      u_screenWidth:{value:screenWidth},
-      u_screenHeight:{value:screenHeight}
-    };
+  <div id="drop-overlay">Drop audio file to play 🎧</div>
+  <div id="toasts"></div>
+  <div id="hint-bar"><kbd>Space</kbd> play · <kbd>1–5</kbd> screens · <kbd>S</kbd> picker · <kbd>F</kbd> fullscreen · drop a file anywhere</div>
 
-    let material, mesh;
-    async function initShader(){
-      const frag = await fetch('shader.glsl?v=' + Math.random()).then(r=>r.text());
-      material = new THREE.ShaderMaterial({
-        uniforms,
-        fragmentShader: frag,
-        vertexShader:`void main(){gl_Position=vec4(position,1.0);}`
-      });
-      mesh = new THREE.Mesh(new THREE.PlaneGeometry(2,2), material);
-      scene.add(mesh);
-    }
-
-    await initShader();
-
-    const gui = new GUI({container:document.getElementById('ui')});
-    gui.add(uniforms.u_intensity,'value',0.2,3.0,0.01).name('Intensity');
-    gui.add(uniforms.u_power,'value',2.0,12.0,0.1).name('Power');
-    gui.add(uniforms.u_hueShift,'value',0.0,6.283,0.01).name('HueShift');
-    gui.add(uniforms.u_shapeMod,'value',0.0,2.0,0.01).name('Shape Mod');
-    gui.add(uniforms.u_distortion,'value',0.0,1.0,0.01).name('Distortion');
-    gui.add(uniforms.u_rotationSpeed,'value',0.0,2.0,0.01).name('Rot Speed');
-    gui.add(uniforms.u_chaos,'value',0.0,1.5,0.01).name('Chaos');
-    gui.add(uniforms.u_morphing,'value',0.0,1.5,0.01).name('Morphing');
-    gui.add(uniforms.u_frequencyResponse,'value',0.0,2.0,0.01).name('Freq Response');
-    gui.add(uniforms.u_shapeRegen,'value',0.0,1.5,0.01).name('Shape Regen');
-    gui.add(uniforms.u_beatSync,'value',0.0,2.0,0.01).name('Beat Sync');
-    gui.add(uniforms.u_structureChange,'value',0.0,1.5,0.01).name('Structure');
-    gui.add(uniforms.u_breathing,'value',0.0,1.0,0.01).name('Breathing');
-    gui.add(uniforms.u_pulse,'value',0.0,1.0,0.01).name('Pulse');
-    gui.add(uniforms.u_movementLimit,'value',0.0,1.0,0.01).name('Movement Limit');
-    gui.add(uniforms.u_sizeControl,'value',0.5,1.2,0.01).name('Size Control');
-    gui.add(uniforms.u_colorPalette,'value',0.0,3.0,0.1).name('Color Palette');
-    gui.add(uniforms.u_saturation,'value',0.0,2.0,0.01).name('Saturation');
-    gui.add(uniforms.u_brightness,'value',0.5,2.0,0.01).name('Brightness');
-    
-    // Store controller references for manual updates
-    const controllers = {};
-    
-    // Master reset function that resets everything
-    const masterReset = () => {
-      console.log('=== RESET DEBUG ===');
-      console.log('defaultValues keys:', Object.keys(defaultValues));
-      console.log('controllers keys:', Object.keys(controllers));
-      
-      Object.keys(defaultValues).forEach(key => {
-        console.log(`Resetting ${key}: ${defaultValues[key]}`);
-        uniforms[key].value = defaultValues[key];
-        if(controllers[key]) {
-          console.log(`Found controller for ${key}, calling updateDisplay()`);
-          controllers[key].updateDisplay();
-        } else {
-          console.log(`No controller found for ${key}`);
-        }
-      });
-      console.log('=== END RESET DEBUG ===');
-    };
-    
-    // Add single master reset button
-    gui.add({masterReset}, 'masterReset').name('🔄 RESET ALL');
-    
-    // Store controller references
-    gui.controllersRecursive().forEach(controller => {
-      console.log('Controller found:', controller.property, controller.object, controller);
-      // Check if this controller is for a uniform (object has 'value' property)
-      if(controller.object && controller.object.hasOwnProperty('value')) {
-        // Find the uniform name by looking at the object reference
-        const uniformName = Object.keys(uniforms).find(key => uniforms[key] === controller.object);
-        if(uniformName) {
-          controllers[uniformName] = controller;
-          console.log(`Stored controller for: ${uniformName}`);
-        }
-      }
-    });
-    console.log('Final controllers object:', controllers);
-
-    // Pause button functionality
-    const pauseButton = document.getElementById('pauseButton');
-    pauseButton.addEventListener('click', () => {
-      isPaused = !isPaused;
-      if(isPaused) {
-        pauseStartTime = Date.now();
-        pauseButton.textContent = 'Resume';
-        pauseButton.style.background = '#666';
-        if(srcNode) {
-          srcNode.stop();
-        }
-      } else {
-        pausedTime += Date.now() - pauseStartTime;
-        pauseButton.textContent = 'Pause';
-        pauseButton.style.background = '#333';
-        // Restart audio if it was playing
-        if(srcNode && fileInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = ev => {
-            audioCtx.decodeAudioData(ev.target.result, buf => {
-              const bufferSource = audioCtx.createBufferSource();
-              bufferSource.buffer = buf;
-              bufferSource.connect(analyser);
-              analyser.connect(audioCtx.destination);
-              bufferSource.start();
-              srcNode = bufferSource;
-            });
-          };
-          reader.readAsArrayBuffer(fileInput.files[0]);
-        }
-      }
-    });
-
-    // Enhanced Audio setup with beat detection
-    const fileInput = document.getElementById('audioFile');
-    const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048; // Increased for better frequency resolution
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    const prevData = new Uint8Array(analyser.frequencyBinCount);
-    let srcNode=null;
-    
-    // Beat detection variables
-    let lastBeatTime = 0;
-    let beatThreshold = 0.3;
-    let energyHistory = [];
-    const historyLength = 20;
-    
-    // Pause functionality
-    let isPaused = false;
-    let pausedTime = 0;
-    let pauseStartTime = 0;
-
-    fileInput.onchange = e=>{
-      if(srcNode) srcNode.disconnect();
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = ev=>{
-        audioCtx.decodeAudioData(ev.target.result, buf=>{
-          const bufferSource = audioCtx.createBufferSource();
-          bufferSource.buffer = buf;
-          bufferSource.connect(analyser);
-          analyser.connect(audioCtx.destination);
-          bufferSource.start();
-          srcNode=bufferSource;
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    };
-
-    function updateAudio(){
-      if(isPaused) {
-        // When paused, set all audio values to 0
-        uniforms.u_audioLow.value = 0;
-        uniforms.u_audioMid.value = 0;
-        uniforms.u_audioHigh.value = 0;
-        uniforms.u_audioSubBass.value = 0;
-        uniforms.u_audioBass.value = 0;
-        uniforms.u_audioLowMid.value = 0;
-        uniforms.u_audioMidRange.value = 0;
-        uniforms.u_audioUpperMid.value = 0;
-        uniforms.u_audioHighFreq.value = 0;
-        uniforms.u_audioAir.value = 0;
-        uniforms.u_beatIntensity.value = 0;
-        uniforms.u_energy.value = 0;
-        return;
-      }
-      
-      // Store previous frame data for beat detection
-      prevData.set(data);
-      analyser.getByteFrequencyData(data);
-      
-      // Enhanced multi-resolution frequency bands
-      let subBass=0, bass=0, lowMid=0, mid=0, upperMid=0, high=0, air=0;
-      const l=data.length;
-      for(let i=0;i<l;i++){
-        const v=data[i]/255;
-        if(i<l/7) subBass+=v;           // 0-1/7: Sub-bass (20-60 Hz)
-        else if(i<2*l/7) bass+=v;       // 1/7-2/7: Bass (60-120 Hz)
-        else if(i<3*l/7) lowMid+=v;     // 2/7-3/7: Low-mid (120-250 Hz)
-        else if(i<4*l/7) mid+=v;        // 3/7-4/7: Mid (250-500 Hz)
-        else if(i<5*l/7) upperMid+=v;   // 4/7-5/7: Upper-mid (500-2k Hz)
-        else if(i<6*l/7) high+=v;       // 5/7-6/7: High (2k-8k Hz)
-        else air+=v;                    // 6/7-1: Air (8k+ Hz)
-      }
-      subBass/=l/7; bass/=l/7; lowMid/=l/7; mid/=l/7; upperMid/=l/7; high/=l/7; air/=l/7;
-      
-      // Combine for backward compatibility
-      bass = (subBass + bass) / 2;
-      mid = (lowMid + mid + upperMid) / 3;
-      high = (high + air) / 2;
-      
-      // Calculate total energy for beat detection
-      const totalEnergy = (bass + mid + high) / 3;
-      energyHistory.push(totalEnergy);
-      if(energyHistory.length > historyLength) energyHistory.shift();
-      
-      // MULTI-LEVEL BEAT DETECTION - Separate bass/mid/high beat detection
-      // Bass beat detection (kick drums)
-      let bassSpectralFlux = 0;
-      const bassEnd = Math.floor(l * 0.1);
-      for(let i=0; i<bassEnd; i++){
-        const diff = (data[i]/255) - (prevData[i]/255);
-        if(diff > 0) bassSpectralFlux += diff;
-      }
-      bassSpectralFlux /= bassEnd;
-      
-      // Mid beat detection (snares, claps)
-      let midSpectralFlux = 0;
-      const midStart = Math.floor(l * 0.1);
-      const midEnd = Math.floor(l * 0.5);
-      for(let i=midStart; i<midEnd; i++){
-        const diff = (data[i]/255) - (prevData[i]/255);
-        if(diff > 0) midSpectralFlux += diff;
-      }
-      midSpectralFlux /= (midEnd - midStart);
-      
-      // High beat detection (hi-hats, cymbals)
-      let highSpectralFlux = 0;
-      const highStart = Math.floor(l * 0.5);
-      for(let i=highStart; i<l; i++){
-        const diff = (data[i]/255) - (prevData[i]/255);
-        if(diff > 0) highSpectralFlux += diff;
-      }
-      highSpectralFlux /= (l - highStart);
-      
-      // Overall spectral flux for general beat detection
-      let spectralFlux = (bassSpectralFlux + midSpectralFlux + highSpectralFlux) / 3.0;
-      
-      // Calculate average energy for threshold
-      const avgEnergy = energyHistory.reduce((a,b) => a+b, 0) / energyHistory.length;
-      const beatThreshold = avgEnergy * 1.3; // Dynamic threshold
-      
-      // Detect beats with multi-level response
-      let beatDetected = false;
-      const now = Date.now();
-      
-      // Strong beat if any frequency band has strong flux
-      const strongBeat = bassSpectralFlux > beatThreshold * 0.8 || 
-                         midSpectralFlux > beatThreshold * 0.9 || 
-                         highSpectralFlux > beatThreshold;
-      
-      if(strongBeat && (now - lastBeatTime) > 200){
-        beatDetected = true;
-        lastBeatTime = now;
-      }
-      
-      // Attack/Release envelopes for more natural response
-      const attackRate = 0.15; // Fast attack
-      const releaseRate = 0.03; // Slow release
-      
-      // Apply different smoothing for attack vs release
-      const bassDiff = bass - uniforms.u_audioLow.value;
-      const midDiff = mid - uniforms.u_audioMid.value;
-      const highDiff = high - uniforms.u_audioHigh.value;
-      
-      const bassRate = bassDiff > 0 ? attackRate : releaseRate;
-      const midRate = midDiff > 0 ? attackRate : releaseRate;
-      const highRate = highDiff > 0 ? attackRate : releaseRate;
-      
-      uniforms.u_audioLow.value += bassDiff * bassRate;
-      uniforms.u_audioMid.value += midDiff * midRate;
-      uniforms.u_audioHigh.value += highDiff * highRate;
-      
-      // Update 7-band audio uniforms with attack/release envelopes
-      const subBassDiff = subBass - uniforms.u_audioSubBass.value;
-      const bassDiff2 = bass - uniforms.u_audioBass.value;
-      const lowMidDiff = lowMid - uniforms.u_audioLowMid.value;
-      const midRangeDiff = mid - uniforms.u_audioMidRange.value;
-      const upperMidDiff = upperMid - uniforms.u_audioUpperMid.value;
-      const highFreqDiff = high - uniforms.u_audioHighFreq.value;
-      const airDiff = air - uniforms.u_audioAir.value;
-      
-      uniforms.u_audioSubBass.value += subBassDiff * (subBassDiff > 0 ? attackRate : releaseRate);
-      uniforms.u_audioBass.value += bassDiff2 * (bassDiff2 > 0 ? attackRate : releaseRate);
-      uniforms.u_audioLowMid.value += lowMidDiff * (lowMidDiff > 0 ? attackRate : releaseRate);
-      uniforms.u_audioMidRange.value += midRangeDiff * (midRangeDiff > 0 ? attackRate : releaseRate);
-      uniforms.u_audioUpperMid.value += upperMidDiff * (upperMidDiff > 0 ? attackRate : releaseRate);
-      uniforms.u_audioHighFreq.value += highFreqDiff * (highFreqDiff > 0 ? attackRate : releaseRate);
-      uniforms.u_audioAir.value += airDiff * (airDiff > 0 ? attackRate : releaseRate);
-      
-      // Update new uniforms
-      uniforms.u_beatIntensity.value = beatDetected ? 1.0 : Math.max(0, uniforms.u_beatIntensity.value - 0.1);
-      uniforms.u_energy.value = totalEnergy;
-    }
-
-    function resize(){
-      renderer.setSize(innerWidth, innerHeight);
-      uniforms.u_resolution.value.set(innerWidth*pixelRatio, innerHeight*pixelRatio);
-    }
-    addEventListener('resize',resize);
-
-    let clock=new THREE.Clock();
-    function animate(){
-      requestAnimationFrame(animate);
-      
-      // Handle time when paused
-      if(isPaused) {
-        uniforms.u_time.value = pausedTime / 1000.0; // Keep time frozen
-      } else {
-        uniforms.u_time.value = (clock.getElapsedTime() * 1000.0 - pausedTime) / 1000.0;
-      }
-      
-      updateAudio();
-      renderer.render(scene,camera);
-    }
-    animate();
-  </script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
