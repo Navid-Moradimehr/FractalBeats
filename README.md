@@ -1,20 +1,21 @@
 # 🌌 FractalBeats
 
-**Real-time audio-reactive fractal visualizer with 5 switchable screens.** Load any music file (or use your microphone) and pick a fractal universe to fly through. Runs 100% in your browser — no install, no server.
+**Real-time audio-reactive fractal visualizer with 4 switchable screens.** Load any music file (or use your microphone) and pick a fractal universe to fly through. Runs 100% in your browser — no install, no server.
 
 **[Live Demo](https://navid-moradimehr.github.io/FractalBeats)**
 
 ## 🖥️ The Screens
 
-Press `1`–`5` (or the ⊞ button) to switch anytime — the music keeps playing:
+Press `1`–`4` (or the ⊞ button) to switch anytime — the music keeps playing:
 
 | # | Screen | What it does |
 |---|--------|--------------|
 | 1 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with 19 tweakable audio-reactive parameters — the classic experience. |
-| 2 | 🌀 **Julia Explorer** | Auto-tours through 7 famous Mandelbrot coordinates (Seahorse Valley, Elephant Valley…), or morphs a Julia set whose `c` orbits with the mids. Wheel-zoom and drag to explore manually. |
-| 3 | 🕳️ **Fractal Tunnel** | Infinite fly-through of kali-set blossoms. Your tempo × energy sets the flight speed; beats fire light rings down the corridor. |
-| 4 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
-| 5 | 🔮 **Kaleidoscope** | Mirror-symmetric kali mandala that reshapes with every beat. |
+| 2 | 🕳️ **Fractal Tunnel** | One continuous fly-through of kali-set blossoms for the whole song — velocity follows a smoothed energy envelope, and your position survives screen switches. |
+| 3 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
+| 4 | 🔮 **Kaleidoscope** | Mirror-symmetric kali mandala with a smoothed, capped spin rate that eases with the music. |
+
+> 🌀 A fifth screen, **Julia Explorer** (Mandelbrot coordinate tours + Julia morphing), ships **disabled** — its code lives in `src/screens/julia.js`; re-enable it by uncommenting its import in `src/main.js`.
 
 ## 🎧 Audio Sources
 
@@ -27,7 +28,7 @@ Press `1`–`5` (or the ⊞ button) to switch anytime — the music keeps playin
 | Key | Action |
 |-----|--------|
 | `Space` | Play / pause |
-| `1`–`5` | Switch screen |
+| `1`–`4` | Switch screen |
 | `S` | Open/close the screen picker |
 | `F` | Fullscreen |
 
