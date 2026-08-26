@@ -16,6 +16,11 @@ export function initUI({ engine, app, screenDefs, onSwitch }) {
 
   // --- Screen cards ---
   const grid = $('card-grid');
+  const keyRange = screenDefs.length > 1 ? `1–${screenDefs.length}` : '1';
+  document.querySelector('#picker-overlay .picker-sub').textContent =
+    `Pick a visual screen — switch anytime with keys ${keyRange} or the ⊞ button`;
+  const hintKbd = document.querySelectorAll('#hint-bar kbd')[1];
+  if (hintKbd) hintKbd.textContent = keyRange;
   screenDefs.forEach((def, i) => {
     const card = document.createElement('div');
     card.className = 'screen-card';

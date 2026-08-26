@@ -33,9 +33,10 @@ export default {
       brightness: 1.1,
     };
 
-    let time = s.uniforms.u_time.value;
-    let rotAngle = 0;
-    let smoothMid = 0;
+    const st = ctx.persist;
+    let time = st.time ?? s.uniforms.u_time.value;
+    let rotAngle = st.rotAngle ?? 0;
+    let smoothMid = st.smoothMid ?? 0;
     let lastRate = 0;
 
     const gui = new GUI({ container: ctx.guiHost, title: '🔮 Kaleidoscope' });
@@ -70,6 +71,10 @@ export default {
         u.u_iterations.value = params.iterations;
         u.u_palette.value = params.palette;
         u.u_brightness.value = params.brightness;
+
+        st.time = time;
+        st.rotAngle = rotAngle;
+        st.smoothMid = smoothMid;
       },
       render() { s.render(); },
       resize(w, h) { s.resize(w, h); },

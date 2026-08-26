@@ -53,7 +53,9 @@ void main() {
     float z = zi * spacing + 0.15;
     float persp = 0.9 / z;
 
-    float ang = travel * 0.06 + float(i) * 0.35 + u_time * 0.02;
+    // Appearance must be a function of continuous depth (zi) ONLY — never of
+    // the loop index — so the frame is identical when the layer stack wraps.
+    float ang = travel * 0.06 + zi * 0.35 + u_time * 0.02;
     mat2 R = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
     vec2 q = R * uv * persp * 2.2;
 
@@ -69,20 +71,20 @@ void main() {
     // Dissolve layers as they approach the camera instead of letting them
     // engulf the frame and pop when they wrap around.
     float near = smoothstep(0.12, 0.60, z);
-    vec3 layerCol = palette(fract(d * 0.75 + float(i) * 0.05 - travel * 0.02));
+    vec3 layerCol = palette(fract(d * 0.75 + zi * 0.05 - travel * 0.02));
 
     // Beat rings illuminate the closest visible layers hardest
-    float beatBoost = u_beat * 0.10 * exp(-zi * 0.35);
+    float beatBoost = u_beat * 0.07 * exp(-zi * 0.35);
     col += layerCol * glow * depthFade * near * (0.15 + beatBoost);
   }
 
   // Beat flash in the heart of the tunnel
-  col += palette(0.9) * exp(-dot(uv, uv) * 4.0) * u_beat * 0.25;
+  col += palette(0.9) * exp(-dot(uv, uv) * 4.0) * u_beat * 0.16;
 
   // Corridor shading: keep the vanishing point dark so it reads as a tunnel
   col *= 0.30 + 0.70 * smoothstep(0.03, 0.42, length(uv));
 
-  col *= u_brightness * (0.9 + u_bass * 0.5);
+  col *= u_brightness * (0.95 + u_bass * 0.2);
   col += vec3(0.01, 0.02, 0.04);
 
   col = pow(col, vec3(0.4545));

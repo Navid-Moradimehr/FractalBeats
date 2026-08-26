@@ -2,12 +2,13 @@ import * as THREE from '../vendor/three.module.js';
 import { AudioEngine } from './audio-engine.js';
 import { initUI } from './ui.js';
 import mandelbulbScreen from './screens/mandelbulb.js';
-import juliaScreen from './screens/julia.js';
+// Disabled for now — code kept in src/screens/julia.js
+// import juliaScreen from './screens/julia.js';
 import tunnelScreen from './screens/tunnel.js';
 import spectrumScreen from './screens/spectrum.js';
 import kaleidoscopeScreen from './screens/kaleidoscope.js';
 
-const SCREENS = [mandelbulbScreen, juliaScreen, tunnelScreen, spectrumScreen, kaleidoscopeScreen];
+const SCREENS = [mandelbulbScreen, tunnelScreen, spectrumScreen, kaleidoscopeScreen];
 const MIN_QUALITY = 0.5;
 const MAX_QUALITY = 1.0;
 
@@ -25,10 +26,14 @@ class App {
     this.screens = new Map(SCREENS.map((s) => [s.id, s]));
     this.current = null;
     this.currentDef = null;
+    // Per-screen state that survives switching (e.g. tunnel camera position)
+    this.persist = {};
 
     this.lastFrame = performance.now();
     this.fpsSamples = [];
     this._lastQualityCheck = performance.now();
+    this._badStreak = 0;
+    this._goodStreak = 0;
 
     window.addEventListener('resize', () => this._onResize());
 
@@ -79,6 +84,7 @@ class App {
         audio: this.engine,
         guiHost: this.guiHost,
         stage: this.stage,
+        persist: this.persist[def.id] || (this.persist[def.id] = {}),
         width: this.renderSize.x,
         height: this.renderSize.y,
       });
@@ -101,17 +107,25 @@ class App {
   }
 
   _adaptQuality(now) {
-    if (now - this._lastQualityCheck < 1500) return;
+    if (now - this._lastQualityCheck < 3000) return;
     this._lastQualityCheck = now;
-    if (this.fpsSamples.length < 20) { this.fpsSamples.length = 0; return; }
+    if (this.fpsSamples.length < 30) { this.fpsSamples.length = 0; return; }
     const avg = this.fpsSamples.reduce((a, b) => a + b, 0) / this.fpsSamples.length;
     this.fpsSamples.length = 0;
 
+    // Hysteresis: only step after sustained bad/good windows, so resolution
+    // changes (visible as a subtle sharpness pop) are rare.
+    if (avg < 36) { this._badStreak++; this._goodStreak = 0; }
+    else if (avg > 55) { this._goodStreak++; this._badStreak = 0; }
+    else { this._badStreak = 0; this._goodStreak = 0; }
+
     const prevScale = this.qualityScale;
-    if (avg < 36 && this.qualityScale > MIN_QUALITY) {
-      this.qualityScale = Math.max(MIN_QUALITY, this.qualityScale - 0.15);
-    } else if (avg > 56 && this.qualityScale < MAX_QUALITY) {
-      this.qualityScale = Math.min(MAX_QUALITY, this.qualityScale + 0.05);
+    if (this._badStreak >= 2 && this.qualityScale > MIN_QUALITY) {
+      this.qualityScale = Math.max(MIN_QUALITY, this.qualityScale * 0.85);
+      this._badStreak = 0;
+    } else if (this._goodStreak >= 3 && this.qualityScale < MAX_QUALITY) {
+      this.qualityScale = Math.min(MAX_QUALITY, this.qualityScale * 1.08);
+      this._goodStreak = 0;
     }
     if (prevScale !== this.qualityScale) {
       this._applySize();

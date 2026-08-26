@@ -63,7 +63,8 @@ export default {
     });
 
     const params = { ...defaults };
-    let time = Math.random() * 100;
+    const st = ctx.persist;
+    let time = st.time ?? Math.random() * 100;
 
     const gui = new GUI({ container: ctx.guiHost, title: '🪐 Mandelbulb' });
     const controllers = {};
@@ -90,6 +91,7 @@ export default {
     return {
       update(dt, audio) {
         time += dt;
+        st.time = time;
         const u = s.uniforms;
         for (const key of Object.keys(defaults)) u[key].value = params[key];
         for (const key of Object.keys(perfDefaults)) u[key].value = perf[key];

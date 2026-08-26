@@ -34,9 +34,12 @@ export default {
       brightness: 1.15,
     };
 
-    let time = Math.random() * 100;
-    let camZ = s.uniforms.u_camZ.value;
-    let smoothEnergy = 0;
+    // State persists across screen switches — re-entering the tunnel resumes
+    // the same flight instead of restarting (one evolution per song).
+    const st = ctx.persist;
+    let time = st.time ?? Math.random() * 100;
+    let camZ = st.camZ ?? Math.random() * 100;
+    let smoothEnergy = st.smoothEnergy ?? 0;
     let lastSpeed = 0;
     const tempoFactor = (TEMPO_BPM / 60) * 0.12;
 
@@ -70,6 +73,10 @@ export default {
         u.u_iterations.value = params.iterations;
         u.u_palette.value = params.palette;
         u.u_brightness.value = params.brightness * (0.92 + 0.25 * smoothEnergy);
+
+        st.time = time;
+        st.camZ = camZ;
+        st.smoothEnergy = smoothEnergy;
       },
       render() { s.render(); },
       resize(w, h) { s.resize(w, h); },

@@ -36,6 +36,7 @@ export class AudioEngine extends EventTarget {
 
     this.energyHistory = [];
     this.lastBeatTime = 0;
+    this._beatPulse = 0;
     this.trackName = '';
   }
 
@@ -219,11 +220,15 @@ export class AudioEngine extends EventTarget {
     const strong = flux > threshold && flux > 0.02;
     if (strong && now - this.lastBeatTime > BEAT_REFRACTORY_MS) {
       this.beat = true;
-      this.beatIntensity = 1.0;
+      this._beatPulse = 1.0;
       this.lastBeatTime = now;
       this._emit('beat', { intensity: 1.0 });
     }
-    this.beatIntensity = Math.max(0, this.beatIntensity - 0.06);
+    // Smooth envelope: fast (~40ms) attack instead of an instant strobe,
+    // slow release — keeps reactive visuals punchy but never jumpy.
+    this._beatPulse = Math.max(0, this._beatPulse - 0.07);
+    const attack = this._beatPulse > this.beatIntensity ? 0.45 : 0.12;
+    this.beatIntensity += (this._beatPulse - this.beatIntensity) * attack;
   }
 
   dispose() {
