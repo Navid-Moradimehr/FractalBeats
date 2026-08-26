@@ -2,24 +2,37 @@ import * as THREE from '../../vendor/three.module.js';
 import { GUI } from '../../vendor/lil-gui.module.min.js';
 import { createShaderScreen, addUniforms } from './shader-screen.js';
 
+// Famous boundary locations. `deep` = how far the dive into each one goes.
+// Every point sits ON the set boundary, so a straight zoom into it is always
+// content-full. The camera only travels between points while zoomed OUT far
+// enough to see the whole set, so the tour never crosses empty space.
 const TOUR = [
-  { x: -0.5, y: 0.0, scale: 1.6 },
-  { x: -0.7, y: 0.0, scale: 1.1 },
-  { x: -0.74543, y: 0.11301, scale: 0.02 },
-  { x: -0.16, y: 1.0405, scale: 0.03 },
-  { x: -0.7269, y: 0.1889, scale: 0.008 },
-  { x: 0.28693, y: 0.01449, scale: 0.0007 },
-  { x: -0.748, y: 0.1, scale: 0.004 },
+  { x: -0.5, y: 0.0, deep: 0.55 },
+  { x: -0.7, y: 0.0, deep: 0.30 },
+  { x: -0.74543, y: 0.11301, deep: 0.0035 },
+  { x: -0.16, y: 1.0405, deep: 0.06 },
+  { x: -0.7269, y: 0.1889, deep: 0.0018 },
+  { x: 0.28693, y: 0.01449, deep: 0.00035 },
+  { x: -0.748, y: 0.1, deep: 0.0012 },
 ];
 
-const SEGMENT_SECONDS = 16;
+const OVERVIEW = 1.6;
+const OUT_TIME = 7.5;
+const IN_BASE_TIME = 8.0;
+const IN_LOG_TIME = 0.9;
+
+const easeInOut = (t) => t * t * (3 - 2 * t);
+const smoothstep = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 export default {
   id: 'julia',
   name: 'Julia Explorer',
   icon: '🌀',
   type: 'webgl',
-  tagline: 'Fly through famous Mandelbrot coordinates or morph a musical Julia set.',
+  tagline: 'Dive into famous Mandelbrot coordinates or morph a musical Julia set.',
   glow: 'rgba(69,183,209,0.20)',
   accent: 'rgba(69,183,209,0.65)',
 
@@ -29,7 +42,7 @@ export default {
       u_time: 0,
       u_resolution: new THREE.Vector2(s.initialSize.width, s.initialSize.height),
       u_center: new THREE.Vector2(-0.5, 0),
-      u_scale: 1.6,
+      u_scale: OVERVIEW,
       u_juliaMix: 0,
       u_juliaC: new THREE.Vector2(0.355, 0.355),
       u_maxIter: 160,
@@ -50,30 +63,74 @@ export default {
     };
 
     let time = 0;
-    let tourPos = Math.random() * (TOUR.length - 1);
     let pulseScale = 1;
     let juliaAngle = Math.random() * Math.PI * 2;
+
+    // --- Tour state machine ---
+    // OUT: pull back from deep-at-A to overview; center may only travel toward
+    //      B in proportion to how far zoomed out we are.
+    // IN:  continuous exponential dive straight into boundary point B.
+    let segIndex = Math.floor(Math.random() * TOUR.length);
+    let phase = 'in';
+    let phaseT = 0;
+    let outFrom = { ...TOUR[segIndex] };
+    const curCenter = new THREE.Vector2(TOUR[segIndex].x, TOUR[segIndex].y);
+    let curScale = OVERVIEW;
+
+    function inDuration(point) {
+      return IN_BASE_TIME + Math.abs(Math.log(OVERVIEW / point.deep)) * IN_LOG_TIME;
+    }
+
+    function tourStep(dt) {
+      phaseT += dt * params.tourSpeed;
+      const A = outFrom;
+      const B = TOUR[(segIndex + 1) % TOUR.length];
+
+      if (phase === 'out') {
+        const t = Math.min(1, phaseT / OUT_TIME);
+        const e = easeInOut(t);
+        curScale = Math.exp(Math.log(A.deep) + (Math.log(OVERVIEW) - Math.log(A.deep)) * e);
+        const gate = easeInOut(smoothstep(0.10, 0.85, curScale / OVERVIEW));
+        curCenter.set(A.x + (B.x - A.x) * gate, A.y + (B.y - A.y) * gate);
+        if (t >= 1) { phase = 'in'; phaseT = 0; }
+      } else {
+        const dur = inDuration(B);
+        const t = Math.min(1, phaseT / dur);
+        const e = easeInOut(t);
+        curScale = Math.exp(Math.log(OVERVIEW) + (Math.log(B.deep) - Math.log(OVERVIEW)) * e);
+        curCenter.set(B.x, B.y);
+        if (t >= 1) {
+          segIndex = (segIndex + 1) % TOUR.length;
+          outFrom = { ...TOUR[segIndex] };
+          phase = 'out';
+          phaseT = 0;
+        }
+      }
+    }
 
     // --- Interaction: wheel zoom + drag pan (turns off auto tour) ---
     const canvas = ctx.renderer.domElement;
     let dragging = false;
     let lastX = 0, lastY = 0;
-    function userTookControl() { params.autoTour = false; guiControllers.autoTour.updateDisplay(); }
+    function userTookControl() {
+      params.autoTour = false;
+      guiControllers.autoTour.updateDisplay();
+    }
     function onWheel(e) {
       e.preventDefault();
       const f = Math.exp(e.deltaY * 0.0012);
-      params._scaleTarget = (params._scaleTarget || s.uniforms.u_scale.value) * f;
+      params._scaleTarget = (params._scaleTarget || curScale) * f;
       userTookControl();
     }
     function onDown(e) { dragging = true; lastX = e.clientX; lastY = e.clientY; }
     function onMove(e) {
       if (!dragging) return;
       const rect = canvas.getBoundingClientRect();
-      const sx = s.uniforms.u_scale.value * (e.clientX - lastX) / rect.height;
-      const sy = s.uniforms.u_scale.value * (e.clientY - lastY) / rect.height;
-      const c = s.uniforms.u_center.value;
+      const sx = curScale * (e.clientX - lastX) / rect.height;
+      const sy = curScale * (e.clientY - lastY) / rect.height;
       if (params.mode === 'Mandelbrot Tour') {
-        c.x -= sx; c.y += sy;
+        curCenter.x -= sx;
+        curCenter.y += sy;
         userTookControl();
       }
       lastX = e.clientX; lastY = e.clientY;
@@ -95,37 +152,31 @@ export default {
     gui.add(params, 'brightness', 0.4, 2, 0.01).name('Brightness');
 
     return {
+      uniforms: s.uniforms,
+      debug: () => ({ phase, phaseT, segIndex, scale: curScale, cx: curCenter.x, cy: curCenter.y }),
       update(dt, audio) {
         time += dt;
         const u = s.uniforms;
 
-        // Mode crossfade
         const targetMix = params.mode === 'Julia Morph' ? 1 : 0;
         u.u_juliaMix.value += (targetMix - u.u_juliaMix.value) * Math.min(1, dt * 3);
         const mix = u.u_juliaMix.value;
 
-        // Center & zoom
-        if (mix < 0.98 && params.autoTour) {
-          tourPos = (tourPos + dt * (params.tourSpeed / SEGMENT_SECONDS)) % (TOUR.length - 1);
-          const i = Math.floor(tourPos);
-          const t = tourPos - i;
-          const ease = t * t * (3 - 2 * t);
-          const a = TOUR[i], b = TOUR[Math.min(i + 1, TOUR.length - 1)];
-          u.u_center.value.set(
-            a.x + (b.x - a.x) * ease,
-            a.y + (b.y - a.y) * ease
-          );
-          const logS = Math.log(a.scale) + (Math.log(b.scale) - Math.log(a.scale)) * ease;
-          params._baseScale = Math.exp(logS);
-        } else if (mix < 0.98 && !params.autoTour) {
-          params._baseScale = THREE.MathUtils.clamp(params._scaleTarget || params._baseScale || u.u_scale.value, 1e-6, 4);
-        }
+        // Bass-driven zoom pulse (gentle, smoothed)
+        const pulseTarget = 1 - audio.low * 0.10 - audio.beatIntensity * 0.04;
+        pulseScale += (pulseTarget - pulseScale) * Math.min(1, dt * 5);
 
-        // Bass-driven zoom pulse
-        pulseScale += ((1 - audio.low * 0.22 - audio.beatIntensity * 0.06) - pulseScale) * Math.min(1, dt * 8);
-        if (mix > 0.98) {
-          // Julia morph: c orbits the unit-ish circle, wobble from mids/highs
-          juliaAngle += dt * (0.15 + audio.mid * 0.9 + audio.energy * 0.4) * params.tourSpeed;
+        if (mix < 0.98) {
+          if (params.autoTour) {
+            tourStep(dt);
+          } else {
+            curScale = THREE.MathUtils.clamp(params._scaleTarget || curScale, 1e-6, 4);
+          }
+          u.u_center.value.copy(curCenter);
+          u.u_scale.value = curScale * pulseScale;
+        } else {
+          // Julia morph: c orbits smoothly; wobble from highs
+          juliaAngle += dt * (0.12 + audio.mid * 0.5 + audio.energy * 0.25) * params.tourSpeed;
           const r = 0.7885 + Math.sin(time * 0.11) * 0.08;
           u.u_juliaC.value.set(
             r * Math.cos(juliaAngle),
@@ -133,8 +184,6 @@ export default {
           );
           u.u_center.value.lerp(new THREE.Vector2(0, 0), Math.min(1, dt * 2));
           u.u_scale.value += ((params._baseScale || 1.6) * pulseScale - u.u_scale.value) * Math.min(1, dt * 4);
-        } else {
-          u.u_scale.value = (params._baseScale || u.u_scale.value) * pulseScale;
         }
 
         u.u_time.value = time;

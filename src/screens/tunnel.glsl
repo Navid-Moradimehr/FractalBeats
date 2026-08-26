@@ -41,9 +41,11 @@ void main() {
   float spacing = 0.45;
   float fr = fract(travel);
 
+  // Constants drift slowly with time only — never with distance travelled,
+  // so the pattern evolves at a constant pace regardless of speed.
   vec2 cst = vec2(
-    0.82 + 0.10 * sin(u_time * 0.07 + travel * 0.2) + u_mid * 0.20,
-    0.60 + 0.15 * cos(u_time * 0.09 + travel * 0.16) + u_high * 0.25
+    0.82 + 0.10 * sin(u_time * 0.05) + u_mid * 0.20,
+    0.60 + 0.15 * cos(u_time * 0.06) + u_high * 0.25
   ) * u_warp;
 
   for (int i = 0; i < LAYERS; i++) {
@@ -51,7 +53,7 @@ void main() {
     float z = zi * spacing + 0.15;
     float persp = 0.9 / z;
 
-    float ang = travel * 0.15 + float(i) * 0.35 + u_time * 0.03;
+    float ang = travel * 0.06 + float(i) * 0.35 + u_time * 0.02;
     mat2 R = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
     vec2 q = R * uv * persp * 2.2;
 
@@ -64,11 +66,13 @@ void main() {
     float glow = exp(-d * 2.2);
 
     float depthFade = exp(-zi * 0.22);
-    float near = smoothstep(0.0, 0.6, z);
+    // Dissolve layers as they approach the camera instead of letting them
+    // engulf the frame and pop when they wrap around.
+    float near = smoothstep(0.12, 0.60, z);
     vec3 layerCol = palette(fract(d * 0.75 + float(i) * 0.05 - travel * 0.02));
 
-    // Beat rings illuminate the closest layers hardest
-    float beatBoost = u_beat * 0.14 * exp(-zi * 0.35);
+    // Beat rings illuminate the closest visible layers hardest
+    float beatBoost = u_beat * 0.10 * exp(-zi * 0.35);
     col += layerCol * glow * depthFade * near * (0.15 + beatBoost);
   }
 

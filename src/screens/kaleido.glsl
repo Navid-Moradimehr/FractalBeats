@@ -2,6 +2,7 @@ precision highp float;
 
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform float u_rot;
 uniform float u_segments;
 uniform float u_bass;
 uniform float u_mid;
@@ -36,13 +37,14 @@ void main() {
   // Bass zoom punch
   uv *= 1.0 + clamp(u_bass, 0.0, 1.2) * 0.22;
 
-  float rot = u_time * 0.04 + u_time * 0.05 * u_mid;
-  uv = mat2(cos(rot), -sin(rot), sin(rot), cos(rot)) * uv;
+  // Rotation angle is integrated on the CPU from a smoothed rate, so tempo
+  // changes never retroactively jerk the phase.
+  uv = mat2(cos(u_rot), -sin(u_rot), sin(u_rot), cos(u_rot)) * uv;
 
   // N-fold mirror fold
   float seg = max(3.0, floor(u_segments));
   float r = length(uv);
-  float ang = atan(uv.y, uv.x) + u_time * 0.03;
+  float ang = atan(uv.y, uv.x) + u_rot * 0.6;
   float sector = 6.28318530718 / seg;
   ang = abs(mod(ang, sector) - sector * 0.5);
   vec2 p = vec2(cos(ang), sin(ang)) * r;

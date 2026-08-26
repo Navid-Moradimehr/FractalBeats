@@ -16,6 +16,7 @@ export default {
     addUniforms(s, {
       u_time: Math.random() * 100,
       u_resolution: new THREE.Vector2(s.initialSize.width, s.initialSize.height),
+      u_rot: 0,
       u_segments: 8,
       u_bass: 0, u_mid: 0, u_high: 0, u_beat: 0, u_energy: 0,
       u_warp: 1.0,
@@ -33,6 +34,9 @@ export default {
     };
 
     let time = s.uniforms.u_time.value;
+    let rotAngle = 0;
+    let smoothMid = 0;
+    let lastRate = 0;
 
     const gui = new GUI({ container: ctx.guiHost, title: '🔮 Kaleidoscope' });
     gui.add(params, 'segments', 3, 16, 1).name('Mirror Segments');
@@ -42,13 +46,21 @@ export default {
     gui.add(params, 'brightness', 0.4, 2.2, 0.01).name('Brightness');
 
     return {
+      uniforms: s.uniforms,
+      debug: () => ({ rotAngle, rate: lastRate, smoothMid }),
       update(dt, audio) {
         time += dt;
         const u = s.uniforms;
-        // Mirror count breathes with the music when it really kicks
-        const segPulse = audio.beatIntensity > 0.9 ? (audio.high > 0.5 ? 1 : 0) : 0;
+        // Integrate rotation from a heavily smoothed rate (≈1.5s time constant)
+        // with a hard cap — the spin eases with the music, never kicks.
+        smoothMid += (audio.mid - smoothMid) * Math.min(1, dt * 0.7);
+        const rate = Math.min(0.22, 0.045 + 0.16 * smoothMid);
+        lastRate = rate;
+        rotAngle += dt * rate;
+
         u.u_time.value = time;
-        u.u_segments.value = params.segments + segPulse * 2;
+        u.u_rot.value = rotAngle;
+        u.u_segments.value = params.segments;
         u.u_bass.value = audio.low;
         u.u_mid.value = audio.mid;
         u.u_high.value = audio.high;

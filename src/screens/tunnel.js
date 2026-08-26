@@ -36,6 +36,9 @@ export default {
 
     let time = Math.random() * 100;
     let camZ = s.uniforms.u_camZ.value;
+    let smoothEnergy = 0;
+    let lastSpeed = 0;
+    const tempoFactor = (TEMPO_BPM / 60) * 0.12;
 
     const gui = new GUI({ container: ctx.guiHost, title: '🕳️ Fractal Tunnel' });
     gui.add(params, 'baseSpeed', 0.2, 4, 0.05).name('Base Speed');
@@ -45,11 +48,16 @@ export default {
     gui.add(params, 'brightness', 0.4, 2.5, 0.01).name('Brightness');
 
     return {
+      uniforms: s.uniforms,
+      debug: () => ({ camZ, speed: lastSpeed, smoothEnergy }),
       update(dt, audio) {
         time += dt;
-        // Camera velocity = tempo × musical energy; beats give a kick.
-        const tempoFactor = (TEMPO_BPM / 60) * 0.12;
-        camZ += dt * params.baseSpeed * tempoFactor * (0.6 + audio.energy * 2.4 + audio.beatIntensity * 1.2);
+        // One continuous evolving flight: velocity follows a heavily smoothed
+        // energy envelope so there are no surges or resets on beats.
+        smoothEnergy += (audio.energy - smoothEnergy) * Math.min(1, dt * 1.2);
+        const speed = params.baseSpeed * tempoFactor * (0.75 + 0.55 * smoothEnergy);
+        lastSpeed = speed;
+        camZ += dt * speed;
 
         const u = s.uniforms;
         u.u_time.value = time;
@@ -61,7 +69,7 @@ export default {
         u.u_warp.value = params.warp;
         u.u_iterations.value = params.iterations;
         u.u_palette.value = params.palette;
-        u.u_brightness.value = params.brightness * (0.85 + audio.energy * 0.5);
+        u.u_brightness.value = params.brightness * (0.92 + 0.25 * smoothEnergy);
       },
       render() { s.render(); },
       resize(w, h) { s.resize(w, h); },
