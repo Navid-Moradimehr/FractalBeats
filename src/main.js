@@ -42,6 +42,7 @@ class App {
       app: this,
       screenDefs: SCREENS,
       onSwitch: (id) => this.switchTo(id),
+      getCurrentDef: () => this.currentDef,
       onFrame: () => this.current,
     });
 

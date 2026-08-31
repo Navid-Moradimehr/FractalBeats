@@ -29,7 +29,7 @@ html, body {
   display: block;
 }
 
-#stage { position: fixed; inset: 0; }
+#stage { position: fixed; inset: 0; touch-action: none; } /* drag/pinch camera control */
 
 /* ---------- Header ---------- */
 header {
@@ -175,11 +175,11 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 190px));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 230px));
+  gap: 18px;
   justify-content: center;
   padding: 0 20px;
-  max-width: 1060px;
+  max-width: 1100px;
 }
 .screen-card {
   position: relative;
@@ -202,7 +202,37 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
 }
 .screen-card:hover { transform: translateY(-4px) scale(1.02); border-color: var(--card-accent, rgba(78,205,196,0.6)); }
 .screen-card:hover::before { opacity: 1; }
-.screen-card .icon { font-size: 34px; margin-bottom: 10px; }
+.screen-card .preview {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 50% 40%, var(--card-glow, rgba(78, 205, 196, 0.18)), transparent 75%),
+    rgba(5, 8, 15, 0.9);
+}
+.screen-card .preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.screen-card .preview.no-video video { display: none; }
+.screen-card .preview .icon {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 17px;
+  line-height: 1;
+  background: rgba(5, 8, 15, 0.68);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
 .screen-card .name { font-weight: 700; font-size: 15.5px; margin-bottom: 5px; }
 .screen-card .tagline { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
 .screen-card .key-hint {
@@ -225,6 +255,7 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
   overflow-y: auto;
 }
 #gui-host .lil-gui { --width: 280px; z-index: 40; }
+.hide-desktop { display: none; }
 
 /* ---------- Drop overlay / toasts / hints ---------- */
 #drop-overlay {
@@ -255,6 +286,7 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
   flex-direction: column;
   gap: 8px;
   align-items: center;
+  pointer-events: none; /* informational only — must never block touch gestures */
 }
 .toast {
   background: var(--glass);
@@ -266,6 +298,7 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
   opacity: 0;
   transform: translateY(8px);
   transition: all 0.3s ease;
+  pointer-events: none; /* informational only — must never block touch gestures */
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
@@ -295,10 +328,101 @@ select.btn { appearance: none; -webkit-appearance: none; padding-right: 26px; }
   font-size: 10.5px;
 }
 
+/* ---------- Mobile pull-to-refresh indicator ---------- */
+#ptr-indicator {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+#ptr-indicator.armed { color: var(--accent2); border-color: rgba(78, 205, 196, 0.6); }
+
+/* ---------- Mobile ---------- */
 @media (max-width: 760px) {
   .brand span.title { display: none; }
-  .transport { width: auto; flex-shrink: 1; }
   .track-name { display: none; }
   .btn.hide-sm { display: none; }
   #hint-bar { display: none; }
+
+  /* Own the top-edge pull gesture: suppress native overscroll/refresh */
+  html, body { overscroll-behavior-y: none; }
+  button, select, .btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+  header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
+    background: linear-gradient(to bottom, rgba(3, 5, 10, 0.92), rgba(3, 5, 10, 0.35));
+  }
+  .btn {
+    min-height: 42px;
+    padding: 9px 13px;
+    font-size: 13px;
+  }
+  .btn.icon { padding: 9px 11px; }
+  .btn.primary { min-width: 54px; }
+  .btn.primary .btn-label { display: none; }
+  #source-select { font-size: 12px; padding: 9px 24px 9px 11px; }
+  .hide-desktop { display: inline-block; }
+
+  /* Transport docked at the bottom (thumb reach) */
+  .transport {
+    position: fixed;
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    z-index: 55;
+    padding: 11px 14px;
+  }
+  #seekbar { height: 6px; }
+  #seekbar::-webkit-slider-thumb { width: 18px; height: 18px; }
+  #seekbar::-moz-range-thumb { width: 18px; height: 18px; }
+
+  #toasts { bottom: calc(80px + env(safe-area-inset-bottom)); max-width: 92vw; }
+  .toast { text-align: center; }
+
+  /* Picker: scrollable, 2-up cards on phones */
+  #picker-overlay {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: calc(22px + env(safe-area-inset-top)) 12px calc(100px + env(safe-area-inset-bottom));
+  }
+  .picker-sub { margin-top: -14px; text-align: center; padding: 0 10px; }
+  .card-grid {
+    width: 100%;
+    max-width: 560px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 0;
+  }
+  .screen-card { padding: 12px 12px 14px; }
+  .screen-card .name { font-size: 14px; }
+  .screen-card .tagline { font-size: 11px; }
+
+  /* Settings drawer: hidden behind the ⚙ button, docks above the transport */
+  #gui-host {
+    display: none;
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    max-height: 46vh;
+  }
+  #gui-host.open { display: block; }
+  #gui-host .lil-gui { --width: 100%; }
+
+  #drop-overlay { font-size: 16px; text-align: center; padding: 0 24px; }
 }

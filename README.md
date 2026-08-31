@@ -10,7 +10,7 @@ Press `1`–`4` (or the ⊞ button) to switch anytime — the music keeps playin
 
 | # | Screen | What it does |
 |---|--------|--------------|
-| 1 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with 19 tweakable audio-reactive parameters — the classic experience. |
+| 1 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with orbit-trap coloring, real lighting (specular/AO/fresnel) and ACES tonemapping. Structure breathes with beats; drag to orbit, wheel/pinch to zoom. ~14 sliders in folders. |
 | 2 | 🕳️ **Fractal Tunnel** | One continuous fly-through of kali-set blossoms for the whole song — velocity follows a smoothed energy envelope, and your position survives screen switches. |
 | 3 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
 | 4 | 🔮 **Kaleidoscope** | Mirror-symmetric kali mandala with a smoothed, capped spin rate that eases with the music. |
@@ -30,10 +30,28 @@ Press `1`–`4` (or the ⊞ button) to switch anytime — the music keeps playin
 | `Space` | Play / pause |
 | `1`–`4` | Switch screen |
 | `S` | Open/close the screen picker |
+| `Esc` | Close the picker |
 | `F` | Fullscreen |
+
+**Touch (mobile):** swipe ←/→ to switch screens · swipe ↑ to open the picker · pull down from the top edge to refresh · ⚙ opens the settings drawer.
+
+## 🎞️ Regenerating the screen previews
+
+The looping clips on the landing page are generated automatically — no manual recording:
+
+```bash
+node tools/gen-demo-audio.js      # synthesize the demo track (tools/demo-track.wav)
+node tools/record-previews.js     # drive the app in Chromium, record each screen (tools/raw/)
+# then encode with ffmpeg:
+# ffmpeg -i tools/raw/<id>.webm -t 3.0 -vf scale=480:270 -an -c:v libvpx-vp9 -b:v 350k assets/previews/<id>.webm
+# ffmpeg -ss 1.6 -i tools/raw/<id>.webm -frames:v 1 -vf scale=480:270 -q:v 4 assets/previews/<id>.jpg
+node tools/smoke-test.js          # end-to-end checks (desktop + mobile emulation)
+```
 
 ## ✨ Features
 
+- **Landing-page previews** — every screen card plays a short looping clip of the actual visualizer (`assets/previews/`, recorded automatically, see `tools/`)
+- **Mobile support** — responsive touch layout (bottom-docked transport, safe-area aware), swipe ←/→ to switch screens, swipe ↑ for the picker, ⚙ settings drawer, pull-down from the top edge to refresh
 - 7-band FFT analysis (sub-bass → air) with attack/release envelopes
 - Multi-level spectral-flux **beat detection** with dynamic threshold
 - **Runtime adaptive quality**: measures real FPS and scales render resolution to hold 60fps (no more one-time hardware guesses)
@@ -57,10 +75,11 @@ python -m http.server 8000
 
 ```
 index.html                  app shell: header, transport, screen-picker overlay
+assets/previews/            looping preview clips + posters for the picker cards
 src/
   main.js                   bootstrap, ScreenManager, render loop, adaptive quality
   audio-engine.js           file/mic sources, FFT bands, beat detection
-  ui.js                     cards, transport, drag&drop, shortcuts, toasts
+  ui.js                     cards + previews, transport, drag&drop, shortcuts, touch gestures, toasts
   style.css
   screens/
     shader-screen.js        shared fullscreen-quad shader helper
@@ -69,6 +88,7 @@ src/
     tunnel.js/.glsl
     kaleidoscope.js/.glsl (kaleido.glsl)
     spectrum.js             2D canvas screen
+tools/                      preview-generation + smoke-test scripts (dev only)
 vendor/                     vendored three.module.js + lil-gui (no CDN needed)
 ```
 

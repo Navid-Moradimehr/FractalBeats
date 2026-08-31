@@ -7,7 +7,7 @@ function fmtTime(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-export function initUI({ engine, app, screenDefs, onSwitch }) {
+export function initUI({ engine, app, screenDefs, onSwitch, getCurrentDef }) {
   const $ = (id) => document.getElementById(id);
   const playBtn = $('play-btn');
   const playIcon = () => (engine.isPlaying ? '⏸' : '▶');
@@ -27,29 +27,74 @@ export function initUI({ engine, app, screenDefs, onSwitch }) {
     card.style.setProperty('--card-glow', def.glow);
     card.style.setProperty('--card-accent', def.accent);
     card.innerHTML = `
-      <span class="key-hint">${i + 1}</span>
-      <div class="icon">${def.icon}</div>
+      <div class="preview">
+        <video class="preview-video" muted loop playsinline preload="metadata"
+               poster="assets/previews/${def.id}.jpg" data-src="assets/previews/${def.id}.webm"></video>
+        <span class="icon">${def.icon}</span>
+      </div>
       <div class="name">${def.name}</div>
-      <div class="tagline">${def.tagline}</div>`;
-    card.addEventListener('click', async () => {
-      hideOverlay();
-      await onSwitch(def.id);
-      if (!engine.isPlaying && engine.sourceMode !== 'none') {
-        try { await engine.play(); } catch (e) { /* gesture required */ }
-      }
-      syncPlayBtn();
-    });
+      <div class="tagline">${def.tagline}</div>
+      <span class="key-hint">${i + 1}</span>`;
     grid.appendChild(card);
   });
 
-  function showOverlay() { overlay.classList.remove('hidden'); }
-  function hideOverlay() { overlay.classList.add('hidden'); }
+  // Screen switching is bound ONLY to the cards (event delegation) — clicks or
+  // taps anywhere else on the picker (title, subtitle, background) do nothing.
+  grid.addEventListener('click', (e) => {
+    const card = e.target.closest('.screen-card');
+    if (!card || !grid.contains(card)) return;
+    activateCard(card);
+  });
+
+  async function activateCard(card) {
+    const idx = [...grid.children].indexOf(card);
+    const def = screenDefs[idx];
+    if (!def) return;
+    hideOverlay();
+    await onSwitch(def.id);
+    if (!engine.isPlaying && engine.sourceMode !== 'none') {
+      try { await engine.play(); } catch (e) { /* gesture required */ }
+    }
+    syncPlayBtn();
+  }
+
+  // --- Card preview videos ---
+  // Real src is assigned lazily on first open of the picker; videos play while
+  // the picker is visible and pause when it is hidden (saves CPU/battery).
+  const previewVideos = [...grid.querySelectorAll('.preview-video')];
+  previewVideos.forEach((v) => {
+    v.addEventListener('error', () => v.closest('.preview')?.classList.add('no-video'));
+  });
+  function startPreviews() {
+    previewVideos.forEach((v) => {
+      if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src;
+      v.play().catch(() => { /* not ready yet */ });
+    });
+  }
+  function pausePreviews() {
+    previewVideos.forEach((v) => v.pause());
+  }
+
+  function showOverlay() { overlay.classList.remove('hidden'); startPreviews(); }
+  function hideOverlay() { overlay.classList.add('hidden'); pausePreviews(); }
   $('screens-btn').addEventListener('click', showOverlay);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) hideOverlay(); });
+  // No background-click handler on purpose: tapping the picker backdrop must
+  // not dismiss it or switch screens — only a card (or ⊞ / S) acts.
+
+  // The picker is open on first page load — start the preview clips right away
+  // (muted + playsinline, so browser autoplay policies allow it).
+  if (!overlay.classList.contains('hidden')) startPreviews();
+
+  // --- Settings (lil-gui) drawer toggle (mobile) ---
+  const guiBtn = $('gui-btn');
+  const guiHost = $('gui-host');
+  if (guiBtn && guiHost) {
+    guiBtn.addEventListener('click', () => guiHost.classList.toggle('open'));
+  }
 
   // --- Play / pause ---
   function syncPlayBtn() {
-    playBtn.textContent = `${playIcon()} ${engine.isPlaying ? 'Pause' : 'Play'}`;
+    playBtn.innerHTML = `<span class="play-icon">${playIcon()}</span><span class="btn-label">${engine.isPlaying ? 'Pause' : 'Play'}</span>`;
   }
   playBtn.addEventListener('click', async () => {
     if (engine.sourceMode === 'none') { app.showToast('Load a track or enable the mic first'); return; }
@@ -153,6 +198,8 @@ export function initUI({ engine, app, screenDefs, onSwitch }) {
       syncPlayBtn();
     } else if (e.key.toLowerCase() === 's') {
       overlay.classList.contains('hidden') ? showOverlay() : hideOverlay();
+    } else if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+      hideOverlay();
     } else if (e.key.toLowerCase() === 'f') {
       toggleFullscreen();
     }
@@ -161,6 +208,83 @@ export function initUI({ engine, app, screenDefs, onSwitch }) {
   function toggleFullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen();
+  }
+
+  // --- Mobile touch gestures (touch/coarse pointers only) ---
+  // Horizontal swipe: switch to next/previous screen · Swipe up: open picker ·
+  // Pull down from the top edge: refresh the page.
+  if (window.matchMedia('(pointer: coarse)').matches) setupGestures();
+
+  function setupGestures() {
+    // Elements whose own touch handling must never trigger a gesture.
+    const GESTURE_GUARD = 'header, #gui-host, #picker-overlay, #drop-overlay, #toasts, .lil-gui, button, select, input, a, kbd';
+    let swipeStart = null;
+    let pullStart = null;
+    let pullArmed = false;
+
+    // Pull-to-refresh indicator
+    const ptr = document.createElement('div');
+    ptr.id = 'ptr-indicator';
+    ptr.textContent = '↻ Release to refresh';
+    document.body.appendChild(ptr);
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) { swipeStart = null; pullStart = null; return; }
+      const t = e.touches[0];
+      // Pull-down refresh: only when the touch starts near the top edge.
+      if (window.scrollY <= 0 && t.clientY < 90) {
+        pullStart = { y: t.clientY };
+        pullArmed = false;
+      } else {
+        pullStart = null;
+      }
+      if (t.target.closest(GESTURE_GUARD)) { swipeStart = null; return; }
+      swipeStart = { x: t.clientX, y: t.clientY, t: Date.now() };
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!pullStart) return;
+      const dy = e.touches[0].clientY - pullStart.y;
+      if (dy <= 0) { ptr.style.opacity = '0'; pullArmed = false; return; }
+      const p = Math.max(0, Math.min(1, dy / 110));
+      pullArmed = p >= 1;
+      ptr.classList.toggle('armed', pullArmed);
+      ptr.textContent = pullArmed ? '↻ Release to refresh' : '↻ Pull down to refresh';
+      ptr.style.opacity = String(0.35 + p * 0.65);
+      ptr.style.transform = `translateX(-50%) translateY(${Math.min(52, dy * 0.4)}px)`;
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      if (pullStart) {
+        ptr.style.opacity = '0';
+        ptr.style.transform = 'translateX(-50%)';
+        const armed = pullArmed;
+        pullStart = null;
+        pullArmed = false;
+        if (armed) { location.reload(); return; }
+      }
+      if (!swipeStart) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipeStart.x;
+      const dy = t.clientY - swipeStart.y;
+      const dt = Date.now() - swipeStart.t;
+      swipeStart = null;
+      if (dt > 900) return; // too slow — probably a drag, not a swipe
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      if (adx > 64 && adx > ady * 1.6) {
+        // Horizontal swipe → next / previous screen (wraps around)
+        const curId = getCurrentDef ? getCurrentDef()?.id : null;
+        const curIdx = screenDefs.findIndex((d) => d.id === curId);
+        if (curIdx === -1) return;
+        const def = screenDefs[(curIdx + (dx < 0 ? 1 : -1) + screenDefs.length) % screenDefs.length];
+        onSwitch(def.id);
+        app.showToast(def.name);
+      } else if (dy < -80 && ady > adx * 1.6) {
+        // Swipe up → open the screen picker
+        showOverlay();
+      }
+    }, { passive: true });
   }
 
   // Auto-fade hint bar
