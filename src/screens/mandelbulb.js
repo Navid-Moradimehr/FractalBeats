@@ -23,6 +23,7 @@ export default {
   icon: '🪐',
   type: 'webgl',
   tagline: 'The classic — a ray-marched 3D fractal that breathes with your music.',
+  note: '⚠ Heavy on some setups — ray-marching 3D needs a decent GPU; run it if your device keeps up smoothly.',
   glow: 'rgba(78,205,196,0.20)',
   accent: 'rgba(78,205,196,0.65)',
 

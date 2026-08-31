@@ -34,6 +34,7 @@ export function initUI({ engine, app, screenDefs, onSwitch, getCurrentDef }) {
       </div>
       <div class="name">${def.name}</div>
       <div class="tagline">${def.tagline}</div>
+      ${def.note ? `<div class="note">${def.note}</div>` : ''}
       <span class="key-hint">${i + 1}</span>`;
     grid.appendChild(card);
   });

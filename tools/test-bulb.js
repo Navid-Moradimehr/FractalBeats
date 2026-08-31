@@ -45,7 +45,7 @@ await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
 step('page loaded');
 await page.waitForSelector('#picker-overlay:not(.hidden)');
 await page.setInputFiles('#audio-file', join(ROOT, 'tools', 'demo-track.wav'));
-await page.click('.screen-card:nth-child(1)', { force: true });
+await page.click('.screen-card:nth-child(3)', { force: true }); // mandelbulb is now card #3
 step('mandelbulb active');
 await page.waitForTimeout(2500);
 

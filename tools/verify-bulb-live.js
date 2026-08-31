@@ -46,7 +46,7 @@ page.on('pageerror', (e) => pageErrors.push(e.message));
 await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
 await page.waitForSelector('#picker-overlay:not(.hidden)');
 await page.setInputFiles('#audio-file', join(ROOT, 'tools', 'demo-track.wav'));
-await page.click('.screen-card:nth-child(1)', { force: true });
+await page.click('.screen-card:nth-child(3)', { force: true }); // mandelbulb is now card #3
 await page.waitForTimeout(4000); // shader compile + track ramps in
 
 console.log('t   low   mid  high  beat  energy | kick   uLow  uMid  uHigh | power  iters  size  morph | luma  |diff|');

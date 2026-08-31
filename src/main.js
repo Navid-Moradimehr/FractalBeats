@@ -8,7 +8,7 @@ import tunnelScreen from './screens/tunnel.js';
 import spectrumScreen from './screens/spectrum.js';
 import kaleidoscopeScreen from './screens/kaleidoscope.js';
 
-const SCREENS = [mandelbulbScreen, tunnelScreen, spectrumScreen, kaleidoscopeScreen];
+const SCREENS = [tunnelScreen, spectrumScreen, mandelbulbScreen, kaleidoscopeScreen];
 const MIN_QUALITY = 0.5;
 const MAX_QUALITY = 1.0;
 

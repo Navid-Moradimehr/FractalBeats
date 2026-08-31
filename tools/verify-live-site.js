@@ -30,16 +30,19 @@ const cards = await page.evaluate(() => {
   const videos = [...document.querySelectorAll('.preview-video')];
   return {
     count: c.length,
-    names: [...c].map((el) => el.textContent.trim().replace(/\s+/g, ' ').slice(0, 40)),
+    names: [...c].map((el) => el.textContent.trim().replace(/\s+/g, ' ').slice(0, 44)),
+    order: [...c].map((el) => el.querySelector('.name')?.textContent.trim()),
+    hasNote: [...c].map((el) => !!el.querySelector('.note')),
     videosWithPoster: videos.filter((v) => v.poster).length,
     videosWithSrc: videos.filter((v) => v.getAttribute('data-src')).length,
     readyStateOk: videos.filter((v) => v.readyState >= 1).length,
   };
 });
-console.log('cards:', cards.count, '| names:', cards.names);
+console.log('cards:', cards.count, '| order:', cards.order);
+console.log('notes on cards:', cards.hasNote.map((h, i) => (h ? cards.order[i] : '-')).join(', '));
 console.log('previews: poster', cards.videosWithPoster, '/ src', cards.videosWithSrc, '/ metadata', cards.readyStateOk);
 
-await page.click('.screen-card:nth-child(1)', { force: true }); // mandelbulb
+await page.click('.screen-card:nth-child(3)', { force: true }); // mandelbulb is now card #3
 await page.waitForTimeout(3000);
 const boot = await page.evaluate(() => {
   const app = window.__fractalApp;
@@ -56,7 +59,15 @@ const boot = await page.evaluate(() => {
 });
 console.log('boot:', JSON.stringify(boot));
 console.log('pageerrors/console errors:', errors.length ? errors : 'none');
-const ok = !errors.length && cards.count === 4 && boot.app && boot.screen === 'mandelbulb' && boot.webgl && boot.canvasVisible && boot.size.startsWith('1280');
+const ok =
+  !errors.length &&
+  cards.count === 4 &&
+  cards.order[0] === 'Fractal Tunnel' &&
+  cards.order[1] === 'Spectrum Bloom' &&
+  cards.order[2] === 'Mandelbulb Nebula' &&
+  cards.order[3] === 'Kaleidoscope' &&
+  cards.hasNote[2] === true &&
+  boot.app && boot.screen === 'mandelbulb' && boot.webgl && boot.canvasVisible && boot.size.startsWith('1280');
 console.log(ok ? 'LIVE CHECK PASSED' : 'LIVE CHECK FAILED');
 await browser.close();
 process.exit(ok ? 0 : 1);

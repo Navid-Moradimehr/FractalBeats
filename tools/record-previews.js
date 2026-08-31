@@ -17,7 +17,7 @@ const { chromium } = require(join(globalNpm, '@playwright/mcp/node_modules/playw
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url))); // repo root
 const PORT = 8177;
-const ALL_IDS = ['mandelbulb', 'tunnel', 'spectrum', 'kaleidoscope'];
+const ALL_IDS = ['tunnel', 'spectrum', 'mandelbulb', 'kaleidoscope'];
 const SCREEN_IDS = process.argv.slice(2).length ? process.argv.slice(2) : ALL_IDS;
 const CLIP_MS = 4500; // raw recording length per screen
 const DEMO_WAV = join(ROOT, 'tools', 'demo-track.wav');

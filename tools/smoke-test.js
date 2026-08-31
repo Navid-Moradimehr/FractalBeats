@@ -75,6 +75,13 @@ const swipe = (page, x0, y0, x1, y1, steps = 12) => page.evaluate(([x0, y0, x1, 
   ok((await page.locator('.screen-card').count()) === 4, '4 screen cards rendered');
   ok((await page.locator('.screen-card .preview').count()) === 4, 'every card has a preview area');
 
+  // Order: Fractal Tunnel first, Mandelbulb third (it's the heavy one)
+  const order = await page.evaluate(() => [...document.querySelectorAll('.screen-card .name')].map((n) => n.textContent.trim()));
+  ok(order[0] === 'Fractal Tunnel' && order[2] === 'Mandelbulb Nebula',
+    `card order is tunnel first / mandelbulb third (got: ${order.join(' › ')})`);
+  const noteOnCard3 = await page.evaluate(() => document.querySelectorAll('.screen-card')[2]?.querySelector('.note')?.textContent || '');
+  ok(/heavy/i.test(noteOnCard3) && noteOnCard3.length > 0, 'mandelbulb card (3) shows a "may be heavy on some setups" note');
+
   // Clips must play immediately on page load (picker is open)
   const autoPlaying = await page.waitForFunction(() => {
     const vs = [...document.querySelectorAll('.preview-video')];
@@ -93,11 +100,11 @@ const swipe = (page, x0, y0, x1, y1, steps = 12) => page.evaluate(([x0, y0, x1, 
   await page.waitForTimeout(200);
   ok((await page.evaluate(() => window.__fractalApp.currentDef)) === null, 'title click does NOT activate a screen');
 
-  // Click card #3 (spectrum) → screen opens
-  await page.click('.screen-card:nth-child(3)');
+  // Click card #2 (spectrum) → screen opens
+  await page.click('.screen-card:nth-child(2)');
   await page.waitForTimeout(1200);
   const def3 = await page.evaluate(() => window.__fractalApp.currentDef?.id);
-  ok(def3 === 'spectrum', 'clicking card 3 activates Spectrum Bloom');
+  ok(def3 === 'spectrum', 'clicking card 2 activates Spectrum Bloom');
 
   // Picker reopen via ⊞; previews play while open, pause when hidden
   await page.click('#screens-btn');
@@ -133,10 +140,12 @@ const swipe = (page, x0, y0, x1, y1, steps = 12) => page.evaluate(([x0, y0, x1, 
   await page.waitForTimeout(250);
   ok(await page.locator('#picker-overlay:not(.hidden)').count() === 1, 'mobile: background tap does NOT close picker');
 
-  // Activate screen 1 via card (picker closes), then test the settings drawer
+  // Activate screen 1 via card (now Fractal Tunnel) → picker closes
   await page.click('.screen-card:nth-child(1)');
   await page.waitForTimeout(1500);
   ok(await page.locator('#picker-overlay.hidden').count() === 1, 'mobile: card tap activates screen and closes picker');
+  const card1Def = await page.evaluate(() => window.__fractalApp.currentDef?.id);
+  ok(card1Def === 'tunnel', `mobile: card #1 activates Fractal Tunnel (got: ${card1Def})`);
 
   // Settings drawer toggle (picker closed → ⚙ reachable)
   await page.click('#gui-btn');
@@ -144,17 +153,17 @@ const swipe = (page, x0, y0, x1, y1, steps = 12) => page.evaluate(([x0, y0, x1, 
   await page.click('#gui-btn');
   ok(await page.locator('#gui-host.open').count() === 0, '⚙ closes settings drawer');
 
+  // Swipe left → next screen (spectrum; order is tunnel→spectrum→mandelbulb→kaleidoscope)
   await swipe(page, 320, 400, 60, 405);
   await page.waitForTimeout(800);
-  let def = await page.evaluate(() => window.__fractalApp.currentDef?.id);
-  if (def !== 'tunnel') { await swipe(page, 320, 400, 40, 402); await page.waitForTimeout(800); def = await page.evaluate(() => window.__fractalApp.currentDef?.id); }
-  ok(def === 'tunnel', `swipe left switches to next screen (got: ${def})`);
+  const afterLeft = await page.evaluate(() => window.__fractalApp.currentDef?.id);
+  ok(afterLeft === 'spectrum', `swipe left switches to next screen (got: ${afterLeft})`);
 
-  // Swipe right → previous (mandelbulb)
+  // Swipe right → previous (back to tunnel)
   await swipe(page, 60, 400, 330, 395);
   await page.waitForTimeout(800);
-  def = await page.evaluate(() => window.__fractalApp.currentDef?.id);
-  ok(def === 'mandelbulb', `swipe right switches to previous screen (got: ${def})`);
+  const afterRight = await page.evaluate(() => window.__fractalApp.currentDef?.id);
+  ok(afterRight === 'tunnel', `swipe right switches to previous screen (got: ${afterRight})`);
 
   // Swipe up → picker opens
   await swipe(page, 195, 650, 195, 300);

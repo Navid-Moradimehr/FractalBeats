@@ -36,8 +36,8 @@ await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
 await page.waitForTimeout(2500); // let videos start playing
 await page.screenshot({ path: join(ROOT, 'tools', 'shot-desktop-picker.png') });
 
-// Active screen (spectrum) via card click
-await page.click('.screen-card:nth-child(3)');
+// Active screen (spectrum) via card click — spectrum is card #2 in the current order
+await page.click('.screen-card:nth-child(2)');
 await page.waitForTimeout(2500);
 await page.screenshot({ path: join(ROOT, 'tools', 'shot-desktop-screen.png') });
 await page.close();

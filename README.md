@@ -10,9 +10,9 @@ Press `1`–`4` (or the ⊞ button) to switch anytime — the music keeps playin
 
 | # | Screen | What it does |
 |---|--------|--------------|
-| 1 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with orbit-trap coloring, real lighting (specular/AO/fresnel) and ACES tonemapping. Structure breathes with beats; drag to orbit, wheel/pinch to zoom. ~14 sliders in folders. |
-| 2 | 🕳️ **Fractal Tunnel** | One continuous fly-through of kali-set blossoms for the whole song — velocity follows a smoothed energy envelope, and your position survives screen switches. |
-| 3 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
+| 1 | 🕳️ **Fractal Tunnel** | One continuous fly-through of kali-set blossoms for the whole song — velocity follows a smoothed energy envelope, and your position survives screen switches. |
+| 2 | 📊 **Spectrum Bloom** | Lightweight 2D radial spectrum with waveform ring and beat-triggered particle bursts — perfect for weak GPUs. |
+| 3 | 🪐 **Mandelbulb Nebula** | Ray-marched 3D Mandelbulb with orbit-trap coloring, real lighting (specular/AO/fresnel) and ACES tonemapping. Structure breathes with beats; drag to orbit, wheel/pinch to zoom. ~14 sliders in folders. *⚠ Heavy — its card warns it needs a decent GPU and may be slow on some setups, so it's listed third.* |
 | 4 | 🔮 **Kaleidoscope** | Mirror-symmetric kali mandala with a smoothed, capped spin rate that eases with the music. |
 
 > 🌀 A fifth screen, **Julia Explorer** (Mandelbrot coordinate tours + Julia morphing), ships **disabled** — its code lives in `src/screens/julia.js`; re-enable it by uncommenting its import in `src/main.js`.
