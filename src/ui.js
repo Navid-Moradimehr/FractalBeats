@@ -44,8 +44,7 @@ export function initUI({ engine, app, screenDefs, onSwitch, getCurrentDef }) {
     card.querySelector('.name').textContent = def.name;
     card.querySelector('.tagline').textContent = def.tagline;
     const $note = card.querySelector('.note');
-    $note.textContent = def.note || '';
-    $note.style.display = def.note ? '' : 'none';
+    if ($note) { $note.textContent = def.note || ''; $note.style.display = def.note ? '' : 'none'; }
     card.querySelector('.key-hint').textContent = i + 1;
   });
 

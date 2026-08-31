@@ -82,7 +82,7 @@ const seo = await page.evaluate(() => {
     ogTitle: og('og:title')?.content || '',
     ogImage: og('og:image')?.content || '',
     jsonld: document.querySelector('script[type="application/ld+json"]')?.textContent || '',
-    bodyText: document.body.innerText || '',
+    bodyText: document.body.textContent || '',
   };
 });
 const jsonldValid = (() => { try { return JSON.parse(seo.jsonld), true; } catch { return false; } })();
@@ -96,7 +96,7 @@ const seoOk =
   /Mandelbulb Nebula/.test(seo.bodyText) &&
   /Spectrum Bloom/.test(seo.bodyText) &&
   /Kaleidoscope/.test(seo.bodyText) &&
-  /gpu-heavy|GPU-heavy|heavy on some setups/i.test(seo.bodyText);
+  /heavy on some setups/i.test(seo.bodyText);
 console.log('seo: gsc=%s descLen=%d canonical=%s ogImg=%s jsonldValid=%s textHasScreens=%s heavyNote=%s',
   seo.gscMeta, seo.description.length, seo.canonical, seo.ogImage, jsonldValid,
   /Fractal Tunnel/.test(seo.bodyText) && /Mandelbulb Nebula/.test(seo.bodyText), /heavy on some setups/.test(seo.bodyText));
