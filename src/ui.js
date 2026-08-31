@@ -22,21 +22,31 @@ export function initUI({ engine, app, screenDefs, onSwitch, getCurrentDef }) {
   const hintKbd = document.querySelectorAll('#hint-bar kbd')[1];
   if (hintKbd) hintKbd.textContent = keyRange;
   screenDefs.forEach((def, i) => {
-    const card = document.createElement('div');
-    card.className = 'screen-card';
-    card.style.setProperty('--card-glow', def.glow);
-    card.style.setProperty('--card-accent', def.accent);
-    card.innerHTML = `
+    let card = grid.querySelector('.screen-card[data-screen-id="' + def.id + '"]');
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'screen-card';
+      card.setAttribute('data-screen-id', def.id);
+      card.innerHTML = `
       <div class="preview">
         <video class="preview-video" muted loop playsinline preload="metadata"
                poster="assets/previews/${def.id}.jpg" data-src="assets/previews/${def.id}.webm"></video>
         <span class="icon">${def.icon}</span>
       </div>
-      <div class="name">${def.name}</div>
-      <div class="tagline">${def.tagline}</div>
-      ${def.note ? `<div class="note">${def.note}</div>` : ''}
-      <span class="key-hint">${i + 1}</span>`;
-    grid.appendChild(card);
+      <div class="name"></div>
+      <div class="tagline"></div>
+      <div class="note"></div>
+      <span class="key-hint"></span>`;
+      grid.appendChild(card);
+    }
+    card.style.setProperty('--card-glow', def.glow);
+    card.style.setProperty('--card-accent', def.accent);
+    card.querySelector('.name').textContent = def.name;
+    card.querySelector('.tagline').textContent = def.tagline;
+    const $note = card.querySelector('.note');
+    $note.textContent = def.note || '';
+    $note.style.display = def.note ? '' : 'none';
+    card.querySelector('.key-hint').textContent = i + 1;
   });
 
   // Screen switching is bound ONLY to the cards (event delegation) — clicks or

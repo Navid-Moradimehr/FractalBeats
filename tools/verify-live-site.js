@@ -68,6 +68,42 @@ const ok =
   cards.order[3] === 'Kaleidoscope' &&
   cards.hasNote[2] === true &&
   boot.app && boot.screen === 'mandelbulb' && boot.webgl && boot.canvasVisible && boot.size.startsWith('1280');
-console.log(ok ? 'LIVE CHECK PASSED' : 'LIVE CHECK FAILED');
+
+// --- SEO checks ---
+const seo = await page.evaluate(() => {
+  const meta = (name) => document.querySelector(`meta[name="${name}"]`);
+  const og = (name) => document.querySelector(`meta[property="${name}"]`);
+  const link = (rel) => document.querySelector(`link[rel="${rel}"]`);
+  return {
+    gscMeta: !!document.querySelector('meta[name="google-site-verification"]'),
+    title: document.title.trim(),
+    description: meta('description')?.content || '',
+    canonical: link('canonical')?.href || '',
+    ogTitle: og('og:title')?.content || '',
+    ogImage: og('og:image')?.content || '',
+    jsonld: document.querySelector('script[type="application/ld+json"]')?.textContent || '',
+    bodyText: document.body.innerText || '',
+  };
+});
+const jsonldValid = (() => { try { return JSON.parse(seo.jsonld), true; } catch { return false; } })();
+const seoOk =
+  seo.gscMeta &&
+  seo.description.length > 50 && seo.description.length <= 165 &&
+  seo.canonical.startsWith('https://navid-moradimehr.github.io/FractalBeats/') &&
+  !!seo.ogTitle && seo.ogImage.includes('og-image.png') &&
+  jsonldValid &&
+  /Fractal Tunnel/.test(seo.bodyText) &&
+  /Mandelbulb Nebula/.test(seo.bodyText) &&
+  /Spectrum Bloom/.test(seo.bodyText) &&
+  /Kaleidoscope/.test(seo.bodyText) &&
+  /gpu-heavy|GPU-heavy|heavy on some setups/i.test(seo.bodyText);
+console.log('seo: gsc=%s descLen=%d canonical=%s ogImg=%s jsonldValid=%s textHasScreens=%s heavyNote=%s',
+  seo.gscMeta, seo.description.length, seo.canonical, seo.ogImage, jsonldValid,
+  /Fractal Tunnel/.test(seo.bodyText) && /Mandelbulb Nebula/.test(seo.bodyText), /heavy on some setups/.test(seo.bodyText));
+
+const liveOk = ok && seoOk;
+console.log(ok ? 'CARD/SWITCH CHECKS PASSED' : 'CARD/SWITCH CHECKS FAILED');
+console.log(seoOk ? 'SEO CHECKS PASSED' : 'SEO CHECKS FAILED');
+console.log(liveOk ? 'LIVE CHECK PASSED' : 'LIVE CHECK FAILED');
 await browser.close();
-process.exit(ok ? 0 : 1);
+process.exit(liveOk ? 0 : 1);
